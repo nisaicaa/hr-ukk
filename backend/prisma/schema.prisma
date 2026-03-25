@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  HR
+  FINANCE
+  EMPLOYEE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  LEAVE
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  SPECIAL
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OvertimeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model users {
+  id_user     Int       @id @default(autoincrement())
+  username    String    @unique
+  email       String    @unique
+  password    String
+  role        UserRole
+  is_active   Boolean   @default(true)
+
+  employee    employee? @relation("UserEmployee")
+  approved_leaves     leave[]
+  approved_overtimes  overtime[]
+
+  log_activity log_activity[]
+
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model employee {
+  id_employee     Int      @id @default(autoincrement())
+  id_user         Int      @unique
+
+  nik             String   @unique
+  full_name       String
+  departemen      String
+  jabatan         String
+  birth_date      DateTime
+  hire_date       DateTime
+  employee_status String   @default("AKTIF")
+  basic_salary    Float
+
+  phone_number    String?
+  bank_name       String?
+  bank_account    String?
+  bank_holder     String?
+
+  user        users      @relation("UserEmployee", fields: [id_user], references: [id_user])
+  attendance  attendance[]
+  leave       leave[]
+  overtime    overtime[]
+  payroll     payroll[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("employee")
+}
+
+model attendance {
+  id_attendance         Int   @id @default(autoincrement())
+  id_employee           Int
+  date                  DateTime
+
+  check_in              DateTime?
+  check_out             DateTime?
+
+  checkin_latitude      Float?
+  checkin_longitude     Float?
+  checkin_address       String?
+  checkout_latitude     Float?
+  checkout_longitude    Float?
+  checkout_address      String?
+
+  checkin_photo         String?
+  checkout_photo        String?
+
+  work_duration_minutes Int?
+  attendance_status     AttendanceStatus
+
+  employee              employee @relation(fields: [id_employee], references: [id_employee])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([id_employee, date])
+  @@map("attendance")
+}
+
+model leave {
+  id_leave      Int         @id @default(autoincrement())
+  id_employee   Int
+
+  leave_type    LeaveType
+  start_date    DateTime
+  end_date      DateTime
+  reason        String
+  attachment    String?
+
+  leave_status  LeaveStatus @default(PENDING)
+
+  approved_by   Int?
+  approver      users? @relation(fields: [approved_by], references: [id_user])
+  approved_date DateTime?
+
+  employee      employee @relation(fields: [id_employee], references: [id_employee])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("leave")
+}
+
+model overtime {
+  id_overtime     Int      @id @default(autoincrement())
+  id_employee     Int
+
+  date            DateTime
+  start_time      DateTime
+  end_time        DateTime
+  total_minutes   Int
+
+  overtime_reason String
+  overtime_status OvertimeStatus @default(PENDING)
+
+  approved_by     Int?
+  approver        users? @relation(fields: [approved_by], references: [id_user])
+  approved_date   DateTime?
+
+  employee        employee @relation(fields: [id_employee], references: [id_employee])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("overtime")
+}
+
+model payroll {
+  id_payroll        Int      @id @default(autoincrement())
+  id_employee       Int
+
+  periode_month     Int
+  periode_year      Int
+
+  total_attendance  Int
+  total_leave       Int
+  total_overtime    Int
+
+  deduction         Float
+  total_salary      Float
+  
+  payslips        payslip[]
+
+  created_date      DateTime @default(now())
+
+  employee          employee @relation(fields: [id_employee], references: [id_employee])
+
+  @@unique([id_employee, periode_month, periode_year])
+  @@map("payroll")
+}
+
+model payslip {
+  id_payslip     Int      @id @default(autoincrement())
+  id_payroll     Int      @unique
+  net_salary     Float
+  generated_date DateTime @default(now())
+
+  payroll        payroll  @relation(fields: [id_payroll], references: [id_payroll])
+
+  @@map("payslip")
+}
+model log_activity {
+  id_log      Int      @id @default(autoincrement())
+  id_user     Int?     // Siapa yang melakukan (nullable untuk sistem/login)
+  action      String   // Tindakan: LOGIN, CREATE, UPDATE, DELETE
+  table_name  String   // Tabel terdampak: users, employee, leave, dll
+  description String   // Detail aktivitas
+  created_at  DateTime @default(now())
+
+  user        users?   @relation(fields: [id_user], references: [id_user])
+
+  @@map("log_activity")
+}

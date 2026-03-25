@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-[#F8FAFC] text-slate-900;
+  }
+}
+
+/* Card Menu Bento Kotak Kecil */
+.bento-card {
+  @apply bg-white border border-slate-200 rounded-[28px] aspect-square flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:border-emerald-500 hover:shadow-xl hover:shadow-emerald-900/5 active:scale-95;
+}
+
+/* Shadow halus untuk elemen premium */
+.soft-shadow {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+}

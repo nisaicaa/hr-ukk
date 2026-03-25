@@ -1,0 +1,10 @@
+nik,nama,email,departemen,jabatan,status,basic_salary,birth_date,hire_date
+001,Budi Santoso,budi@company.com,IT,Developer,AKTIF,5000000,1990-01-01,2023-01-01
+002,Siti Aminah,siti@company.com,HR,Staff,AKTIF,4000000,1995-05-15,2024-01-01
+
+===PENTING===
+- Password OTOMATIS: Str0ngP@ssword (semua karyawan)
+- Login: nik / Str0ngP@ssword
+- Kolom wajib: nik,nama,email,departemen,jabatan
+- Status: AKTIF/NON-AKTIF
+- File: .csv atau .xlsx

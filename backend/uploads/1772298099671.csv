@@ -1,0 +1,4 @@
+nik,username,email,full_name,departemen,jabatan,birth_date,hire_date,basic_salary,phone_number,bank_name,bank_account,bank_holder
+3273011703820001,pak_bambang,bambang.test1@gmail.com,Bambang Sukamto,IT,Lead Programmer,1982-03-17,2020-08-15,9500000,081235678901,BCA,5271839201,Bambang Sukamto
+3273112211870002,mbak_siti,siti.test2@gmail.com,Siti Nurhayati,HR,Payroll Specialist,1987-11-22,2021-03-10,6800000,085712345678,BNI,2938476502,Siti Nurhayati
+3273050719900003,mas_joko,joko.test3@gmail.com,Joko Widodo,Finance,Pembukuan Senior,1990-07-05,2022-01-20,7200000,081345678901,MANDIRI,8472936501,Joko Widodo
