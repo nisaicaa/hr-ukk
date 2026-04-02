@@ -8,6 +8,7 @@ import overtime from "./overtime";
 import payroll from "./payroll";
 import logs from "./logs";
 import repot from "./repot";
+import settings from "./workSetting"; // worksetting
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.use("/leave", leave);
 router.use("/overtime", overtime);
 router.use("/payroll", payroll);
 router.use("/logs", logs);
-router.use("/reports", repot);
+router.use("/repot", repot);
+router.use("/settings", settings); // 
 
 export default router;

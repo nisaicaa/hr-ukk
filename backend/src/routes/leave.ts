@@ -1,12 +1,5 @@
 import { Router } from "express";
-import {
-  createLeave,
-  getLeave,
-  approveLeave,
-  rejectLeave,
-  deleteLeave,
-  bulkDeleteLeave,  // ✅ IMPORT INI
-} from "../controllers/leaveController";
+import * as leaveController from "../controllers/leaveController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { requireRole } from "../middlewares/roleMiddleware";
 import { UserRole } from "@prisma/client";
@@ -20,29 +13,38 @@ router.post(
   "/",
   requireRole([UserRole.EMPLOYEE]),
   upload.single("attachment"),
-  createLeave
+  leaveController.createLeave
 );
 
 router.get(
   "/",
   requireRole([UserRole.ADMIN, UserRole.HR, UserRole.EMPLOYEE]),
-  getLeave
+  leaveController.getLeave
 );
 
 router.patch(
   "/approve/:id",
   requireRole([UserRole.HR]),
-  approveLeave
+  leaveController.approveLeave
 );
 
 router.patch(
   "/reject/:id",
   requireRole([UserRole.HR]),
-  rejectLeave
+  leaveController.rejectLeave
 );
 
-// ✅ DELETE ROUTES
-router.delete("/:id", requireRole([UserRole.HR, UserRole.ADMIN]), deleteLeave);
-router.delete("/bulk", requireRole([UserRole.HR, UserRole.ADMIN]), bulkDeleteLeave);
+// ✅ WAJIB: bulk dulu baru :id
+router.delete(
+  "/bulk",
+  requireRole([UserRole.HR, UserRole.ADMIN]),
+  leaveController.bulkDeleteLeave
+);
+
+router.delete(
+  "/:id",
+  requireRole([UserRole.HR, UserRole.ADMIN]),
+  leaveController.deleteLeave
+);
 
 export default router;

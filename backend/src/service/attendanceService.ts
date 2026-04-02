@@ -1,21 +1,27 @@
 import prisma from "../utils/prisma";
 import { AttendanceStatus } from "@prisma/client";
 
-export function makeDateOnly(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+// ✅ helper: ambil tanggal tanpa jam
+export function makeDateOnly(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-export async function findAttendanceForEmployeeOnDate(id_employee: number, date: Date) {
+// ✅ cari attendance hari ini
+export async function findAttendanceForEmployeeOnDate(
+  idemployee: number,
+  date: Date
+) {
   return prisma.attendance.findFirst({
-    where: { 
-      id_employee, 
-      date 
-    }
+    where: {
+      id_employee: idemployee,
+      date: date,
+    },
   });
 }
 
+// ✅ CHECK-IN (ANTI DOUBLE + UPDATE KALAU ADA RECORD TANPA CHECKIN)
 export async function upsertCheckIn(payload: {
-  id_employee: number;
+  idemployee: number;
   date: Date;
   check_in: Date;
   checkin_latitude?: number;
@@ -23,24 +29,58 @@ export async function upsertCheckIn(payload: {
   checkin_address?: string;
   attendance_status: AttendanceStatus;
   checkin_photo?: string;
+  late_minutes?: number;
 }) {
-  const existing = await findAttendanceForEmployeeOnDate(payload.id_employee, payload.date);
-  
+  const existing = await findAttendanceForEmployeeOnDate(
+    payload.idemployee,
+    payload.date
+  );
+
+  const photoString = payload.checkin_photo
+    ? String(payload.checkin_photo)
+    : undefined;
+
+  // ❗ kalau BELUM ADA → create
   if (!existing) {
-    return prisma.attendance.create({ 
-      data: payload as any 
+    return prisma.attendance.create({
+      data: {
+        id_employee: payload.idemployee,
+        date: payload.date,
+        check_in: payload.check_in,
+        checkin_latitude: payload.checkin_latitude,
+        checkin_longitude: payload.checkin_longitude,
+        checkin_address: payload.checkin_address,
+        attendance_status: payload.attendance_status,
+        checkin_photo: photoString,
+        late_minutes: payload.late_minutes || 0,
+      },
     });
   }
-  
+
+  // ❌ kalau sudah check-in → blok
+  if (existing.check_in) {
+    throw new Error("Kamu sudah check-in hari ini");
+  }
+
+  // ✅ kalau record ada tapi belum check-in → update
   return prisma.attendance.update({
     where: { id_attendance: existing.id_attendance },
-    data: payload as any
+    data: {
+      check_in: payload.check_in,
+      checkin_latitude: payload.checkin_latitude,
+      checkin_longitude: payload.checkin_longitude,
+      checkin_address: payload.checkin_address,
+      attendance_status: payload.attendance_status,
+      checkin_photo: photoString,
+      late_minutes: payload.late_minutes || 0,
+    },
   });
 }
 
+// ✅ CHECK-OUT
 export async function checkOutAttendance(
-  id_attendance: number, 
-  data: {
+  id_attendance: number,
+  payload: {
     check_out: Date;
     checkout_latitude?: number;
     checkout_longitude?: number;
@@ -49,43 +89,41 @@ export async function checkOutAttendance(
     checkout_photo?: string;
   }
 ) {
+  const photoString = payload.checkout_photo
+    ? String(payload.checkout_photo)
+    : undefined;
+
   return prisma.attendance.update({
     where: { id_attendance },
-    data
+    data: {
+      check_out: payload.check_out,
+      checkout_latitude: payload.checkout_latitude,
+      checkout_longitude: payload.checkout_longitude,
+      checkout_address: payload.checkout_address,
+      work_duration_minutes: payload.work_duration_minutes,
+      checkout_photo: photoString,
+    },
   });
 }
 
-export async function listAttendanceForEmployee(id_employee: number) {
+// ✅ LIST PUNYA SENDIRI
+export async function listAttendanceForEmployee(idemployee: number) {
   return prisma.attendance.findMany({
-    where: { id_employee },
-    orderBy: { date: 'desc' }
+    where: { id_employee: idemployee },
+    orderBy: { date: "desc" },
   });
 }
 
-// ✅ FIX: Ambil full_name dari employee, bukan user
+// ✅ LIST SEMUA (HR / ADMIN)
 export async function listAllAttendance() {
-  try {
-    const result = await prisma.attendance.findMany({
-      include: {
-        employee: {
-          // ✅ full_name ada di employee, bukan user
-          select: {
-            id_employee: true,
-            full_name: true,
-            nik: true,
-            departemen: true
-          }
-        }
+  return prisma.attendance.findMany({
+    include: {
+      employee: {
+        include: {
+          user: true,
+        },
       },
-      orderBy: { 
-        date: 'desc' 
-      }
-    });
-    
-    console.log("Service - Total attendance records:", result.length);
-    return result;
-  } catch (error) {
-    console.error("listAllAttendance error:", error);
-    throw error;
-  }
+    },
+    orderBy: { date: "desc" },
+  });
 }

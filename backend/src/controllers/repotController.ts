@@ -1,39 +1,45 @@
-// src/controllers/reportController.ts
+import { Request, Response } from "express";
+import { 
+  getHRReportData, 
+  getFinanceReportData, 
+  getAdminReportData 
+} from "../service/repotService";
 
-import {Request,Response} from "express"
-import {getHRReportData,getFinanceReportData,getAdminReportData} from "../service/repotService"
+export const report = async (req: Request, res: Response) => {
+  try {
+    const { month, year } = req.query;
 
+    if (!month || !year) {
+      return res.status(400).json({ message: "Month & Year wajib diisi" });
+    }
 
-export const hrReport = async(req:Request,res:Response)=>{
+    const role = (req as any).user?.role;
 
- const {month,year}=req.query
+    console.log("ROLE LOGIN:", role);
 
- const data = await getHRReportData(Number(month),Number(year))
+    let data;
 
- res.json(data)
+    switch (role) {
+      case "HR":
+        data = await getHRReportData(Number(month), Number(year));
+        break;
 
-}
+      case "FINANCE":
+        data = await getFinanceReportData(Number(month), Number(year));
+        break;
 
+      case "ADMIN":
+        data = await getAdminReportData(Number(month), Number(year));
+        break;
 
+      default:
+        return res.status(403).json({ message: "Tidak ada akses" });
+    }
 
-export const financeReport = async(req:Request,res:Response)=>{
+    res.json(data);
 
- const {month,year}=req.query
-
- const data = await getFinanceReportData(Number(month),Number(year))
-
- res.json(data)
-
-}
-
-
-
-export const adminReport = async(req:Request,res:Response)=>{
-
- const {month,year}=req.query
-
- const data = await getAdminReportData(Number(month),Number(year))
-
- res.json(data)
-
-}
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Calendar, FileText, MapPin,
+  Calendar, FileText, MapPin, AlertCircle,
   Loader2, LogIn, LogOut, Send, Timer, Camera as CameraIcon
 } from 'lucide-react';
 import Webcam from 'react-webcam';
@@ -15,18 +15,40 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [attendanceToday, setAttendanceToday] = useState<any>(null);
   const [location, setLocation] = useState<{ lat: number, lng: number, address: string } | null>(null);
-  // ✅ STATE BARU UNTUK PREVIEW FOTO
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const user = getUser();
+  
+  const [workSetting, setWorkSetting] = useState<any>(null);
+  const [isHoliday, setIsHoliday] = useState(false);
 
+  const user = getUser();
   const webcamRef = useRef<Webcam>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     fetchAttendance();
+    fetchWorkSetting();
     getCurrentLocation();
     return () => clearInterval(timer);
   }, []);
+
+  const fetchWorkSetting = async () => {
+    try {
+      const res = await apiClient.get('/settings');
+      if (res.data.success) {
+        const setting = res.data.data;
+        setWorkSetting(setting);
+        
+        const todayDay = new Date().getDay();
+        const allowedDays = setting.work_days.split(',').map(Number);
+        
+        if (!allowedDays.includes(todayDay)) {
+          setIsHoliday(true);
+        }
+      }
+    } catch (e) {
+      console.error("Gagal ambil setting kerja", e);
+    }
+  };
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -51,34 +73,35 @@ const Dashboard = () => {
     try {
       const res = await apiClient.get('/attendance');
       const todayStr = new Date().toLocaleDateString('en-CA');
-
       const todayData = res.data.data?.find((a: any) => {
         const itemDate = new Date(a.date).toLocaleDateString('en-CA');
         return itemDate === todayStr;
       });
-
       setAttendanceToday(todayData || null);
     } catch (e) {
       console.error(e);
     }
   };
 
+  // ✅ UPDATED: Handle terlambat dengan info dari backend
   const handleAttendance = async (type: 'in' | 'out') => {
+    if (isHoliday) {
+      showToast("Hari ini adalah hari libur!", "error");
+      return;
+    }
+
     if (!webcamRef.current) {
       showToast("Kamera belum siap!", "error");
       return;
     }
 
-    // 1. Ambil screenshot
     const imageSrc = webcamRef.current.getScreenshot();
     if (!imageSrc) {
       showToast("Gagal mengambil foto!", "error");
       return;
     }
     
-    // 2. Tampilkan hasil foto di UI
     setCapturedImage(imageSrc);
-
     const blob = await (await fetch(imageSrc)).blob();
 
     if (!location) {
@@ -88,22 +111,27 @@ const Dashboard = () => {
 
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('photo', blob, 'selfie.jpg');
-      formData.append('latitude', location.lat.toString());
-      formData.append('longitude', location.lng.toString());
-      formData.append('address', location.address);
+      const endpoint = type === 'in' 
+  ? '/attendance/checkin' 
+  : '/attendance/checkout';
 
-      const endpoint = type === 'in' ? '/attendance/check-in' : '/attendance/check-out';
-      await apiClient.post(endpoint, formData);
+const res = await apiClient.post(endpoint, {
+  photo: imageSrc,
+  latitude: location.lat,
+  longitude: location.lng,
+  address: location.address,
+});
+      // DETEKSI TERLAMBAT DARI BACKEND RESPONSE
+      if (res.data.is_late) {
+        showToast(res.data.message, "warning"); // "Kamu terlambat 15 menit"
+      } else {
+        showSuccess("Berhasil", res.data.message);
+      }
 
-      showSuccess("Berhasil", `Absen ${type === 'in' ? 'Masuk' : 'Pulang'} telah tercatat.`);
       fetchAttendance();
-      // Reset foto setelah berhasil absen (opsional)
-      // setCapturedImage(null); 
     } catch (e: any) {
       showError("Gagal", handleError(e));
-      setCapturedImage(null); // Reset foto jika gagal
+      setCapturedImage(null);
     } finally {
       setLoading(false);
     }
@@ -126,7 +154,7 @@ const Dashboard = () => {
             Selamat bekerja, {user?.username?.split(' ')[0]}! 👋
           </h2>
           <p className="text-slate-500 mt-1 font-medium text-lg">
-            Semoga harimu produktif dan penuh semangat.
+            {isHoliday ? "Hari ini adalah hari libur kerja." : "Semoga harimu produktif dan penuh semangat."}
           </p>
         </div>
         <div className="text-center md:text-right bg-emerald-600 text-white py-4 px-10 rounded-[30px] shadow-lg shadow-emerald-100 min-w-[260px]">
@@ -142,11 +170,15 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
           <div className="flex flex-col items-center space-y-6">
-            {/* SELFIE AREA BULAT */}
             <div className="relative">
+              {isHoliday && (
+                <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-sm rounded-full flex flex-col items-center justify-center text-center p-4">
+                  <Calendar className="text-rose-500 mb-2" size={48} />
+                  <p className="text-rose-600 font-black text-sm uppercase">Hari Libur</p>
+                </div>
+              )}
+
               <div className="w-72 h-72 rounded-full border-[10px] border-slate-50 shadow-inner overflow-hidden group relative">
-                
-                {/* ✅ LOGIKA TAMPILKAN FOTO ATAU KAMERA */}
                 {capturedImage ? (
                   <img src={capturedImage} alt="Captured" className="w-full h-full object-cover scale-x-[-1]" />
                 ) : (
@@ -159,8 +191,7 @@ const Dashboard = () => {
                   />
                 )}
 
-                {/* Overlay saat ada foto */}
-                {capturedImage && (
+                {capturedImage && !attendanceToday?.check_out && (
                   <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                     <button onClick={() => setCapturedImage(null)} className="bg-white/90 p-3 rounded-full text-slate-700">
                       <CameraIcon size={24} />
@@ -169,12 +200,11 @@ const Dashboard = () => {
                 )}
               </div>
               
-              {/* Status Badge di atas lingkaran */}
               <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white px-6 py-2 rounded-full shadow-md border border-slate-100">
-                  <span className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                    <div className={`w-2 h-2 rounded-full ${location ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
-                    GPS {location ? 'AKTIF' : 'OFF'}
-                  </span>
+                <span className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                  <div className={`w-2 h-2 rounded-full ${location ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
+                  GPS {location ? 'AKTIF' : 'OFF'}
+                </span>
               </div>
             </div>
 
@@ -191,28 +221,53 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* ACTION BUTTONS */}
           <div className="grid grid-cols-1 gap-5">
+            {/* NOTIFIKASI TERLAMBAT */}
+            {attendanceToday?.attendance_status === 'LATE' && (
+              <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 p-5 rounded-3xl text-amber-700 animate-bounce">
+                <AlertCircle size={24} className="shrink-0" />
+                <div>
+                  <p className="font-bold text-sm">Kamu Datang Terlambat</p>
+                  <p className="text-xs opacity-80">
+                    {attendanceToday.late_minutes ? `${attendanceToday.late_minutes}m` : ''} Pastikan besok datang lebih awal ya!
+                  </p>
+                </div>
+              </div>
+            )}
+
             <button
               onClick={() => handleAttendance('in')}
-              disabled={loading || !!attendanceToday?.check_in}
-              className="py-12 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-50 text-white disabled:text-slate-300 rounded-[40px] font-bold text-2xl transition-all shadow-xl shadow-emerald-100 active:scale-95 flex items-center justify-center gap-4"
+              disabled={loading || !!attendanceToday?.check_in || isHoliday}
+              className={`py-12 rounded-[40px] font-bold text-2xl transition-all shadow-xl flex items-center justify-center gap-4 active:scale-95 
+                ${isHoliday ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100 disabled:bg-slate-50 disabled:text-slate-300'}`}
             >
-              {loading ? <Loader2 className="animate-spin" /> : <><LogIn size={32} /> CHECK IN</>}
+              {loading ? <Loader2 className="animate-spin" /> : <><LogIn size={32} /> {isHoliday ? 'HARI LIBUR' : 'CHECK IN'}</>}
             </button>
 
             <button
               onClick={() => handleAttendance('out')}
-              disabled={loading || !attendanceToday?.check_in || !!attendanceToday?.check_out}
+              disabled={loading || !attendanceToday?.check_in || !!attendanceToday?.check_out || isHoliday}
               className="py-12 bg-slate-800 hover:bg-black disabled:bg-slate-50 text-white disabled:text-slate-300 rounded-[40px] font-bold text-2xl transition-all shadow-xl shadow-slate-100 active:scale-95 flex items-center justify-center gap-4"
             >
               {loading ? <Loader2 className="animate-spin" /> : <><LogOut size={32} /> CHECK OUT</>}
             </button>
             
             {attendanceToday?.check_in && (
-              <p className="text-center text-sm font-bold text-emerald-600 animate-pulse">
-                Kamu sudah absen masuk pukul {new Date(attendanceToday.check_in).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}
-              </p>
+              <div className="space-y-1 text-center">
+                <p className="text-sm font-bold text-emerald-600">
+                  Check-in: {new Date(attendanceToday.check_in).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}
+                  {attendanceToday.attendance_status === 'LATE' && (
+                    <span className="ml-2 text-amber-600 font-bold">
+                      ({attendanceToday.late_minutes || 0}m telat)
+                    </span>
+                  )}
+                </p>
+                {attendanceToday.check_out && (
+                  <p className="text-sm font-bold text-slate-500">
+                    Check-out: {new Date(attendanceToday.check_out).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>

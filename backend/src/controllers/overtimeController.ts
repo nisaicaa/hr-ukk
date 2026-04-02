@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { UserRole, OvertimeStatus } from "@prisma/client";
 import * as employeeService from "../service/employeeService";
 import * as overtimeService from "../service/overtimeService";
-// ✅ 1. IMPORT SERVICE LOG
 import * as logService from "../service/logService";
+import prisma from "../utils/prisma"; // tambahan (AMAN)
 
 export async function createOvertime(req: Request, res: Response) {
   try {
@@ -15,13 +15,71 @@ export async function createOvertime(req: Request, res: Response) {
       return res.status(400).json({ success: false, message: "Employee not found" });
     }
 
+    // ✅ VALIDASI INPUT WAJIB
+    if (!date || !start_time || !end_time || !overtime_reason) {
+      return res.status(400).json({
+        success: false,
+        message: "Semua field wajib diisi",
+      });
+    }
+
     const start = new Date(start_time);
     const end = new Date(end_time);
 
-    const total_minutes = Math.max(
-      0,
-      Math.round((end.getTime() - start.getTime()) / 60000)
+    // ✅ VALIDASI DATE VALID
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Format waktu tidak valid",
+      });
+    }
+
+    // ✅ VALIDASI HARUS END > START
+    if (end <= start) {
+      return res.status(400).json({
+        success: false,
+        message: "Jam selesai harus setelah jam mulai",
+      });
+    }
+
+    const total_minutes = Math.round(
+      (end.getTime() - start.getTime()) / 60000
     );
+
+    // ✅ VALIDASI UTAMA (REVISI NO.1)
+    if (total_minutes <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Durasi lembur tidak boleh 0",
+      });
+    }
+
+    // ✅ VALIDASI MAX (biar ga ngaco)
+    if (total_minutes > 720) {
+      return res.status(400).json({
+        success: false,
+        message: "Lembur maksimal 12 jam",
+      });
+    }
+
+    // ✅ VALIDASI HARUS SETELAH JAM KERJA
+    const setting = await prisma.work_setting.findFirst({
+      orderBy: { created_at: "desc" },
+    });
+
+    if (setting) {
+      const [workHour, workMinute] = setting.work_end_time.split(":").map(Number);
+
+      const workEnd = new Date(start);
+      workEnd.setHours(workHour, workMinute, 0, 0);
+
+      if (start < workEnd) {
+        return res.status(400).json({
+          success: false,
+          message: "Lembur harus setelah jam kerja selesai",
+        });
+      }
+    }
 
     const result = await overtimeService.createOvertime({
       id_employee: employee.id_employee,
@@ -32,15 +90,19 @@ export async function createOvertime(req: Request, res: Response) {
       overtime_reason,
     });
 
-    // ✅ 2. LOG AKTIVITAS (CREATE)
     await logService.createLog({
       id_user: user.id_user,
       action: "CREATE",
       table_name: "overtime",
-      description: `Karyawan ${employee.full_name} mengajukan lembur pada ${date}`
+      description: `Karyawan ${employee.full_name} mengajukan lembur pada ${date}`,
     });
 
+    // 🔥 BONUS: trigger socket (biar HR realtime)
+    const io = req.app.get("io");
+    io.emit("newOvertimeRequest");
+
     res.json({ success: true, data: result });
+
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -61,6 +123,7 @@ export async function getOvertime(req: Request, res: Response) {
     }
 
     const list = await overtimeService.getOvertimeByEmployee(employee.id_employee);
+
     res.json({ success: true, data: list });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -75,15 +138,14 @@ export async function approveOvertime(req: Request, res: Response) {
     const result = await overtimeService.updateOvertimeStatus(
       Number(id),
       OvertimeStatus.APPROVED,
-      user.id_user // FIXED
+      user.id_user
     );
 
-    // ✅ 3. LOG AKTIVITAS (UPDATE - APPROVE)
     await logService.createLog({
       id_user: user.id_user,
       action: "UPDATE",
       table_name: "overtime",
-      description: `User (Role: ${user.role}) menyetujui pengajuan lembur ID: ${id}`
+      description: `User (Role: ${user.role}) menyetujui pengajuan lembur ID: ${id}`,
     });
 
     res.json({ success: true, data: result });
@@ -100,15 +162,14 @@ export async function rejectOvertime(req: Request, res: Response) {
     const result = await overtimeService.updateOvertimeStatus(
       Number(id),
       OvertimeStatus.REJECTED,
-      user.id_user // FIXED
+      user.id_user
     );
 
-    // ✅ 4. LOG AKTIVITAS (UPDATE - REJECT)
     await logService.createLog({
       id_user: user.id_user,
       action: "UPDATE",
       table_name: "overtime",
-      description: `User (Role: ${user.role}) menolak pengajuan lembur ID: ${id}`
+      description: `User (Role: ${user.role}) menolak pengajuan lembur ID: ${id}`,
     });
 
     res.json({ success: true, data: result });

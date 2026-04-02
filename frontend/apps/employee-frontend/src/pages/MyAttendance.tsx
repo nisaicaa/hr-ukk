@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-// ✅ IMPORT useNavigate
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../../../services/api";
 import { 
   Calendar, Clock, AlertCircle, Timer,
   ArrowUpRight, ArrowDownRight,
-  ArrowLeft // ✅ IMPORT ICON
+  ArrowLeft 
 } from "lucide-react";
 
 const MyAttendance = () => {
-  const navigate = useNavigate(); // ✅ INITIALIZE NAVIGATE
+  const navigate = useNavigate();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,7 +17,6 @@ const MyAttendance = () => {
   const fetchData = async () => {
     try {
       const res = await apiClient.get("/attendance");
-      // Urutkan dari tanggal terbaru
       const sortedData = (res.data.data || []).sort((a: any, b: any) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
@@ -30,7 +28,7 @@ const MyAttendance = () => {
     }
   };
 
-  // Logic Ringkasan (Summary)
+  // Logic Ringkasan
   const totalHadir = data.length;
   const terlambat = data.filter(a => a.attendance_status === "LATE").length;
 
@@ -39,7 +37,6 @@ const MyAttendance = () => {
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          {/* ✅ TOMBOL KEMBALI */}
           <button 
             onClick={() => navigate(-1)} 
             className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm text-slate-500 hover:bg-slate-50 transition-all"
@@ -53,15 +50,15 @@ const MyAttendance = () => {
         </div>
         
         <div className="flex gap-3">
-            <input 
-                type="month" 
-                className="bg-white border border-slate-200 rounded-2xl px-4 py-2.5 font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none"
-                defaultValue={new Date().toISOString().slice(0, 7)}
-            />
+          <input 
+              type="month" 
+              className="bg-white border border-slate-200 rounded-2xl px-4 py-2.5 font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none"
+              defaultValue={new Date().toISOString().slice(0, 7)}
+          />
         </div>
       </div>
 
-      {/* STATS SUMMARY (Ala Mekari) */}
+      {/* STATS SUMMARY */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
           { label: 'Total Hadir', value: totalHadir, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -107,11 +104,17 @@ const MyAttendance = () => {
                     </p>
                   </td>
                   <td className="p-6">
-                    <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${
-                        row.attendance_status === 'PRESENT' ? 'bg-emerald-50 text-emerald-600' : 
-                        row.attendance_status === 'LATE' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                    {/* ✅ BADGE TERLAMBAT DENGAN MENIT */}
+                    <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${
+                      row.attendance_status === 'PRESENT' ? 'bg-emerald-50 text-emerald-600' : 
+                      row.attendance_status === 'LATE' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
                     }`}>
                       {row.attendance_status}
+                      {row.late_minutes && row.late_minutes > 0 && (
+                        <span className="text-[8px] bg-white/80 px-1 py-0.5 rounded-full shadow-sm">
+                          {row.late_minutes}m
+                        </span>
+                      )}
                     </span>
                   </td>
                   <td className="p-6">
@@ -119,17 +122,23 @@ const MyAttendance = () => {
                       <ArrowUpRight size={18} className="text-emerald-500" />
                       {row.check_in ? new Date(row.check_in).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '--:--'}
                     </div>
-                    <p className="text-[9px] text-slate-400 font-medium truncate max-w-[150px]">{row.checkin_address || '-'}</p>
+                    <p className="text-[9px] text-slate-400 font-medium truncate max-w-[150px]">
+                      {row.checkin_address || '-'}
+                    </p>
                   </td>
                   <td className="p-6">
                     <div className="flex items-center gap-2 text-slate-700 font-black">
                       <ArrowDownRight size={18} className="text-rose-500" />
                       {row.check_out ? new Date(row.check_out).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '--:--'}
                     </div>
-                    <p className="text-[9px] text-slate-400 font-medium truncate max-w-[150px]">{row.checkout_address || '-'}</p>
+                    <p className="text-[9px] text-slate-400 font-medium truncate max-w-[150px]">
+                      {row.checkout_address || '-'}
+                    </p>
                   </td>
                   <td className="p-6 font-black text-slate-600">
-                    {row.work_duration_minutes ? `${Math.floor(row.work_duration_minutes / 60)}j ${row.work_duration_minutes % 60}m` : '-'}
+                    {row.work_duration_minutes ? 
+                      `${Math.floor(row.work_duration_minutes / 60)}j ${row.work_duration_minutes % 60}m` : '-'
+                    }
                   </td>
                 </tr>
               ))}

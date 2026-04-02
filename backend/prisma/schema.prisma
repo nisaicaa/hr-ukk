@@ -9,6 +9,7 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  
   HR
   FINANCE
   EMPLOYEE
@@ -77,6 +78,7 @@ model employee {
   bank_name       String?
   bank_account    String?
   bank_holder     String?
+  profile_picture String?
 
   user        users      @relation("UserEmployee", fields: [id_user], references: [id_user])
   attendance  attendance[]
@@ -109,6 +111,7 @@ model attendance {
   checkout_photo        String?
 
   work_duration_minutes Int?
+  late_minutes          Int?   
   attendance_status     AttendanceStatus
 
   employee              employee @relation(fields: [id_employee], references: [id_employee])
@@ -213,4 +216,18 @@ model log_activity {
   user        users?   @relation(fields: [id_user], references: [id_user])
 
   @@map("log_activity")
+}
+model work_setting {
+  id                Int      @id @default(autoincrement())
+  work_start_time   String   // "08:00"
+  work_end_time     String   // "17:00"
+  work_days         String   // "1,2,3,4,5" (Senin-Jumat)
+
+  late_tolerance    Int      @default(15)   // menit
+  overtime_minimum  Int      @default(60)   // menit
+
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("work_setting")
 }

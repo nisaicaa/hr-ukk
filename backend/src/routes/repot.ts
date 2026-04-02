@@ -1,14 +1,10 @@
-// src/routes/reportRoutes.ts
+import express from "express";
+import { report } from "../controllers/repotController";
+import {authMiddleware} from "../middlewares/authMiddleware"; // pastikan middleware set req.user
 
-import express from "express"
-import {hrReport,financeReport,adminReport} from "../controllers/repotController"
+const router = express.Router();
 
-const router = express.Router()
+// semua role pakai endpoint sama, middleware cek role
+router.get("/", authMiddleware, report);
 
-router.get("/hr",hrReport)
-
-router.get("/finance",financeReport)
-
-router.get("/admin",adminReport)
-
-export default router 
+export default router;
