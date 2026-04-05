@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { signToken } from "../utils/jwt";
 import * as userService from "../service/userService";
 
+// CONTROLLERS UNTUK LOGIN
 export async function login(req: Request, res: Response): Promise<void> {
   try {
     const { email, password } = req.body;

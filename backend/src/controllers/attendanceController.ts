@@ -10,6 +10,7 @@ import {
 import prisma from '../utils/prisma';
 import { AttendanceStatus } from '@prisma/client';
 
+// CONTROLLER UNTUK ABSENSI
 export const checkIn = async (req: any, res: Response) => {
   try {
     const { latitude, longitude, address, photo } = req.body;
@@ -93,6 +94,7 @@ export const checkIn = async (req: any, res: Response) => {
   }
 };
 
+// CONTROLLER UNTUK CHECK-OUT
 export const checkOut = async (req: any, res: Response) => {
   try {
     const { latitude, longitude, address, photo } = req.body;
@@ -151,6 +153,7 @@ export const checkOut = async (req: any, res: Response) => {
   }
 };
 
+// CONTROLLER UNTUK MELIHAT ABSENSI SENDIRI 
 export const getMyAttendance = async (req: any, res: Response) => {
   try {
     const userId = req.user.id_user;
@@ -171,6 +174,7 @@ export const getMyAttendance = async (req: any, res: Response) => {
   }
 };
 
+// CONTROLLER UNTUK MELIHAT SEMUA ABSENSI (HR)
 export const getAllAttendance = async (req: Request, res: Response) => {
   try {
     const data = await listAllAttendance();

@@ -17,7 +17,6 @@ interface UserData {
 const UserManagement = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -48,29 +47,13 @@ const UserManagement = () => {
     }
   };
 
-  const toggleCheckbox = (id: number) => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.length === users.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(users.map(u => u.id_user));
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedIds.length === 0) return;
-    const confirm = await showConfirm("Hapus user?", `Hapus ${selectedIds.length} user yang dipilih?`);
+  const handleDeleteSingle = async (id: number) => {
+    const confirm = await showConfirm("Hapus user?", "Data user ini akan dihapus secara permanen.");
     if (!confirm.isConfirmed) return;
 
     try {
-      await Promise.all(selectedIds.map(id => apiClient.delete(`/users/${id}`)));
+      await apiClient.delete(`/users/${id}`);
       showSuccess("Berhasil", "User telah dihapus");
-      setSelectedIds([]);
       fetchUsers();
     } catch (e: any) {
       showError("Gagal", handleError(e));
@@ -140,15 +123,6 @@ const UserManagement = () => {
         </div>
 
         <div className="flex gap-3 w-full md:w-auto">
-          {selectedIds.length > 0 && (
-            <button
-              onClick={handleBulkDelete}
-              className="bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2.5 rounded-xl flex gap-2 items-center transition-all font-semibold border border-red-200"
-            >
-              <Trash2 size={18} />
-              Hapus ({selectedIds.length})
-            </button>
-          )}
           <button
             onClick={() => setShowCreate(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl flex gap-2 items-center transition-all shadow-md shadow-blue-200 font-semibold"
@@ -175,15 +149,7 @@ const UserManagement = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50/50 border-bottom border-slate-200">
-                <th className="p-5 w-14">
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    checked={selectedIds.length === users.length && users.length > 0}
-                    onChange={toggleSelectAll}
-                  />
-                </th>
+              <tr className="bg-slate-50/50 border-b border-slate-200">
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Username</th>
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Email</th>
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Role</th>
@@ -194,14 +160,6 @@ const UserManagement = () => {
             <tbody className="divide-y divide-slate-100">
               {filtered.map(u => (
                 <tr key={u.id_user} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="p-5">
-                    <input
-                      type="checkbox"
-                      className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      checked={selectedIds.includes(u.id_user)}
-                      onChange={() => toggleCheckbox(u.id_user)}
-                    />
-                  </td>
                   <td className="p-5">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs border border-slate-200">
@@ -231,6 +189,13 @@ const UserManagement = () => {
                       </button>
                       <button onClick={() => openEdit(u)} className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all" title="Edit">
                         <Edit size={20} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteSingle(u.id_user)} 
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" 
+                        title="Hapus User"
+                      >
+                        <Trash2 size={20} />
                       </button>
                     </div>
                   </td>
@@ -382,4 +347,4 @@ const UserManagement = () => {
   );
 };
 
-export default UserManagement;
+export default UserManagement;   

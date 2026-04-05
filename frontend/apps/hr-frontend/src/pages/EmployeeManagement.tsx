@@ -268,7 +268,7 @@ const EmployeeManagement = () => {
                     </td>
                     <td className="px-6 py-5">
                       <p className="text-sm font-medium text-slate-600">{emp.user.email}</p>
-                      {emp.phone_number && <p className="text-sm font-medium text-slate-600">📱 {emp.phone_number}</p>}
+                      {emp.phone_number && <p className="text-sm font-medium text-slate-600"> {emp.phone_number}</p>}
                     </td>
                     <td className="px-6 py-5">
                       <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold mr-2">{emp.departemen}</span>
