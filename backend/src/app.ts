@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
-// ✅ FIX SOCKET.IO CORS - HARDCODE ALL PORTS
+// FIX SOCKET.IO CORS - HARDCODE ALL PORTS
 const io = new Server(httpServer, {
   cors: {
     origin: [
@@ -32,7 +32,7 @@ const io = new Server(httpServer, {
 app.set("io", io);
 
 io.on("connection", (socket) => {
-  console.log("✅ Socket connected:", socket.id);
+  console.log("Socket connected:", socket.id);
 });
 
 const PORT = Number(process.env.PORT || 7000);

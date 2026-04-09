@@ -1,5 +1,6 @@
 import prisma from "../utils/prisma";
 
+// CREATE LOG
 export async function createLog(data: {
   id_user?: number;
   action: string;
@@ -15,6 +16,7 @@ export async function createLog(data: {
   }
 }
 
+// GET ALL LOGS (HR / ADMIN)
 export async function getAllLogs(filters?: {
   startDate?: string;
   endDate?: string;

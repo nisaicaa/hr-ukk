@@ -1,6 +1,7 @@
 import prisma from "../utils/prisma";
 import { OvertimeStatus } from "@prisma/client";
 
+// CREATE OVERTIME 
 export async function createOvertime(data: {
   id_employee: number;
   date: Date;
@@ -17,6 +18,7 @@ export async function createOvertime(data: {
   });
 }
 
+// GET OVERTIME BY EMPLOYEE
 export async function getOvertimeByEmployee(id_employee: number) {
   return prisma.overtime.findMany({
     where: { id_employee },

@@ -5,6 +5,7 @@ import * as overtimeService from "../service/overtimeService";
 import * as logService from "../service/logService";
 import prisma from "../utils/prisma"; // tambahan (AMAN)
 
+// CONTROLLERS UNTUK OVERTIME
 export async function createOvertime(req: Request, res: Response) {
   try {
     const user = req.user!;
@@ -15,7 +16,7 @@ export async function createOvertime(req: Request, res: Response) {
       return res.status(400).json({ success: false, message: "Employee not found" });
     }
 
-    // ✅ VALIDASI INPUT WAJIB
+    //  VALIDASI INPUT WAJIB
     if (!date || !start_time || !end_time || !overtime_reason) {
       return res.status(400).json({
         success: false,
@@ -26,7 +27,7 @@ export async function createOvertime(req: Request, res: Response) {
     const start = new Date(start_time);
     const end = new Date(end_time);
 
-    // ✅ VALIDASI DATE VALID
+    // VALIDASI DATE VALID
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return res.status(400).json({
         success: false,
@@ -34,7 +35,7 @@ export async function createOvertime(req: Request, res: Response) {
       });
     }
 
-    // ✅ VALIDASI HARUS END > START
+    // VALIDASI HARUS END > START
     if (end <= start) {
       return res.status(400).json({
         success: false,
@@ -46,7 +47,7 @@ export async function createOvertime(req: Request, res: Response) {
       (end.getTime() - start.getTime()) / 60000
     );
 
-    // ✅ VALIDASI UTAMA (REVISI NO.1)
+    // VALIDASI UTAMA (REVISI NO.1)
     if (total_minutes <= 0) {
       return res.status(400).json({
         success: false,
@@ -54,7 +55,7 @@ export async function createOvertime(req: Request, res: Response) {
       });
     }
 
-    // ✅ VALIDASI MAX (biar ga ngaco)
+    // VALIDASI MAX (biar ga ngaco)
     if (total_minutes > 720) {
       return res.status(400).json({
         success: false,
@@ -62,7 +63,7 @@ export async function createOvertime(req: Request, res: Response) {
       });
     }
 
-    // ✅ VALIDASI HARUS SETELAH JAM KERJA
+    // VALIDASI HARUS SETELAH JAM KERJA
     const setting = await prisma.work_setting.findFirst({
       orderBy: { created_at: "desc" },
     });
@@ -97,7 +98,7 @@ export async function createOvertime(req: Request, res: Response) {
       description: `Karyawan ${employee.full_name} mengajukan lembur pada ${date}`,
     });
 
-    // 🔥 BONUS: trigger socket (biar HR realtime)
+    //  BONUS: trigger socket (biar HR realtime)
     const io = req.app.get("io");
     io.emit("newOvertimeRequest");
 
@@ -108,6 +109,7 @@ export async function createOvertime(req: Request, res: Response) {
   }
 }
 
+// GET OVERTIME (SEMUA UNTUK ADMIN/HR, KHUSUS UNTUK KARYAWAN)
 export async function getOvertime(req: Request, res: Response) {
   try {
     const user = req.user!;
@@ -130,6 +132,7 @@ export async function getOvertime(req: Request, res: Response) {
   }
 }
 
+// APPROVE OVERTIME (HANYA HR/ADMIN)
 export async function approveOvertime(req: Request, res: Response) {
   try {
     const { id } = req.params;
@@ -154,6 +157,7 @@ export async function approveOvertime(req: Request, res: Response) {
   }
 }
 
+// REJECT OVERTIME (HR)
 export async function rejectOvertime(req: Request, res: Response) {
   try {
     const { id } = req.params;

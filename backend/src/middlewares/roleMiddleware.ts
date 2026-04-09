@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { UserRole } from "@prisma/client";
 
+// Middleware untuk memeriksa peran pengguna
 export function requireRole(allowed: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user;

@@ -9,6 +9,7 @@ interface AuthRequest extends Request {
   };
 }
 
+// Middleware untuk otentikasi JWT
 export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const auth = req.headers.authorization;

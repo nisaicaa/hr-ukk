@@ -1,12 +1,12 @@
 import prisma from "../utils/prisma";
 import { AttendanceStatus } from "@prisma/client";
 
-// ✅ helper: ambil tanggal tanpa jam
+// helper: ambil tanggal tanpa jam
 export function makeDateOnly(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-// ✅ cari attendance hari ini
+// cari attendance hari ini
 export async function findAttendanceForEmployeeOnDate(
   idemployee: number,
   date: Date
@@ -19,7 +19,7 @@ export async function findAttendanceForEmployeeOnDate(
   });
 }
 
-// ✅ CHECK-IN (ANTI DOUBLE + UPDATE KALAU ADA RECORD TANPA CHECKIN)
+// CHECK-IN (ANTI DOUBLE + UPDATE KALAU ADA RECORD TANPA CHECKIN)
 export async function upsertCheckIn(payload: {
   idemployee: number;
   date: Date;
@@ -57,12 +57,12 @@ export async function upsertCheckIn(payload: {
     });
   }
 
-  // ❌ kalau sudah check-in → blok
+  // kalau sudah check-in → blok
   if (existing.check_in) {
     throw new Error("Kamu sudah check-in hari ini");
   }
 
-  // ✅ kalau record ada tapi belum check-in → update
+  // kalau record ada tapi belum check-in → update
   return prisma.attendance.update({
     where: { id_attendance: existing.id_attendance },
     data: {
@@ -77,7 +77,7 @@ export async function upsertCheckIn(payload: {
   });
 }
 
-// ✅ CHECK-OUT
+// CHECK-OUT
 export async function checkOutAttendance(
   id_attendance: number,
   payload: {
@@ -106,7 +106,7 @@ export async function checkOutAttendance(
   });
 }
 
-// ✅ LIST PUNYA SENDIRI
+// LIST PUNYA SENDIRI
 export async function listAttendanceForEmployee(idemployee: number) {
   return prisma.attendance.findMany({
     where: { id_employee: idemployee },
@@ -114,7 +114,7 @@ export async function listAttendanceForEmployee(idemployee: number) {
   });
 }
 
-// ✅ LIST SEMUA (HR / ADMIN)
+// LIST SEMUA (HR / ADMIN)
 export async function listAllAttendance() {
   return prisma.attendance.findMany({
     include: {

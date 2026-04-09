@@ -6,6 +6,7 @@ import prisma from "../utils/prisma";
 import * as userService from "../service/userService";
 import * as logService from "../service/logService";
 
+// list users (HR/Admin)
 export async function listUsers(req: Request, res: Response) {
 
   try {
@@ -27,7 +28,7 @@ export async function listUsers(req: Request, res: Response) {
   }
 
 }
-
+// CREATE USERS
 export async function createUser(req: Request, res: Response) {
 
   try {
@@ -90,6 +91,7 @@ export async function createUser(req: Request, res: Response) {
 
 }
 
+// UPDATE USERS
 export async function updateUser(req: Request, res: Response) {
 
   try {
@@ -148,6 +150,7 @@ export async function updateUser(req: Request, res: Response) {
 
 }
 
+// DELETE USERS
 export async function deleteUser(req: Request, res: Response) {
 
   try {

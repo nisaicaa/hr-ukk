@@ -5,6 +5,7 @@ import {
   getAdminReportData 
 } from "../service/repotService";
 
+// REPORT UNTUK HR, FINANCE, ADMIN
 export const report = async (req: Request, res: Response) => {
   try {
     const { month, year } = req.query;

@@ -1,31 +1,50 @@
 import { useState } from "react";
 import apiClient from "../../../../services/api";
 import * as XLSX from "xlsx";
-import { 
-  Users, 
-  UserCheck, 
-  Clock, 
-  Calendar, 
-  FileSpreadsheet, 
-  Search, 
+import {
+  Users,
+  UserCheck,
+  Clock,
+  Calendar,
+  Search,
   Download,
   Database,
   Briefcase,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
+
+interface HRRow {
+  name: string;
+  department: string;
+  position: string;
+  attendance: number;
+  late: number;
+  leave: number;
+  overtime: number;
+}
+
+interface HRSummary {
+  totalEmployees: number;
+  totalAttendance: number;
+  totalLate: number;
+  totalLeave: number;
+  totalOvertime: number;
+}
 
 export default function HRReport() {
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
-  const [tableData, setTableData] = useState<any[]>([]);
-  const [summary, setSummary] = useState<any>(null);
+  const [tableData, setTableData] = useState<HRRow[]>([]);
+  const [summary, setSummary] = useState<HRSummary | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get(`/repot?month=${month}&year=${year}`);
+      // Perbaikan typo: /repot -> /report
+      const res = await apiClient.get(`/report?month=${month}&year=${year}`);
       setTableData(res.data.table || []);
       setSummary(res.data.summary || null);
     } catch (err) {
@@ -37,6 +56,7 @@ export default function HRReport() {
 
   const exportExcel = () => {
     if (tableData.length === 0) return;
+
     const data = tableData.map((r, i) => ({
       No: i + 1,
       Nama: r.name,
@@ -55,168 +75,156 @@ export default function HRReport() {
   };
 
   return (
-    <div className="p-8 bg-[#F1F5F9] min-h-screen font-sans">
-      <div className="max-w-[1440px] mx-auto space-y-6">
+    <div className="p-8 bg-slate-50 min-h-screen font-sans text-slate-900">
+      <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* HEADER */}
-        <div className="flex items-center justify-between bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-              <Users size={28} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-slate-900 leading-none uppercase tracking-tight">HR Intelligence Report</h1>
-              <p className="text-slate-500 text-sm mt-1 font-medium italic">Monitoring kehadiran & produktivitas personil</p>
-            </div>
+        {/* HEADER SECTION */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-3">
+              <div className="p-2 bg-indigo-600 rounded-lg text-white">
+                <Users size={24} />
+              </div>
+              HR Intelligence Report
+            </h1>
+            <p className="text-slate-500 mt-1 ml-11">Monitoring performa dan kehadiran karyawan secara real-time.</p>
           </div>
-          
-          <div className="flex items-center gap-3 bg-slate-50 px-5 py-3 rounded-xl border border-slate-100">
-            <Calendar className="text-indigo-600" size={18} />
-            <span className="text-sm font-black text-slate-700 uppercase tracking-widest tabular-nums">
-              {new Date(year, month - 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
-            </span>
+          <div className="flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-full text-slate-600 font-medium self-start md:self-center">
+            <Calendar size={18} className="text-indigo-600" />
+            {new Date(year, month - 1).toLocaleDateString("id-ID", {
+              month: "long",
+              year: "numeric",
+            })}
           </div>
         </div>
 
-        {/* FILTER BOX */}
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="flex-1 grid grid-cols-2 gap-4">
-            <div className="relative">
-              <label className="absolute -top-2 left-4 bg-white px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Periode Bulan</label>
-              <select 
-                value={month} 
-                onChange={(e) => setMonth(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer"
-              >
-                {Array.from({ length: 12 }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString("id-ID", { month: "long" })}</option>
-                ))}
-              </select>
-            </div>
-            <div className="relative">
-              <label className="absolute -top-2 left-4 bg-white px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tahun</label>
-              <input 
-                type="number" 
-                value={year} 
-                onChange={(e) => setYear(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button 
-              onClick={fetchReport} 
-              disabled={loading}
-              className="bg-slate-900 text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
+        {/* FILTER BAR */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-end">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 ml-1">Bulan</label>
+            <select
+              value={month}
+              onChange={(e) => setMonth(Number(e.target.value))}
+              className="border border-slate-200 p-2.5 rounded-xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-48"
             >
-              {loading ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Search size={16} />} 
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {new Date(0, i).toLocaleString("id-ID", { month: "long" })}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 ml-1">Tahun</label>
+            <input
+              type="number"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="border border-slate-200 p-2.5 rounded-xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-32"
+            />
+          </div>
+
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={fetchReport}
+              disabled={loading}
+              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 transition-all active:scale-95 disabled:opacity-70"
+            >
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
               Generate
             </button>
-            <button 
-              onClick={exportExcel} 
+
+            <button
+              onClick={exportExcel}
               disabled={tableData.length === 0}
-              className="bg-emerald-500 text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2 hover:bg-emerald-600 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-emerald-100"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download size={16} /> Excel
+              <Download size={18} />
+              Excel
             </button>
           </div>
         </div>
 
-        {/* SUMMARY CARDS HR */}
+        {/* SUMMARY CARDS */}
         {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <StatCard label="Total Staff" value={summary.totalEmployees} unit="PERSON" icon={<Users />} color="text-indigo-600" bg="bg-indigo-50" />
-            <StatCard label="Total Hadir" value={summary.totalAttendance} unit="HARI" icon={<UserCheck />} color="text-emerald-600" bg="bg-emerald-50" />
-            <StatCard label="Total Telat" value={summary.totalLate} unit="KALI" icon={<Clock />} color="text-amber-600" bg="bg-amber-50" />
-            <StatCard label="Total Cuti" value={summary.totalLeave} unit="HARI" icon={<AlertCircle />} color="text-rose-600" bg="bg-rose-50" />
-            <StatCard label="Lembur" value={summary.totalOvertime} unit="JAM" icon={<Briefcase />} color="text-blue-600" bg="bg-blue-50" />
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5">
+            <StatCard label="Total Staff" value={summary.totalEmployees} icon={<Users />} color="text-blue-600" bg="bg-blue-50" />
+            <StatCard label="Hadir" value={summary.totalAttendance} icon={<UserCheck />} color="text-emerald-600" bg="bg-emerald-50" />
+            <StatCard label="Terlambat" value={summary.totalLate} icon={<Clock />} color="text-amber-600" bg="bg-amber-50" />
+            <StatCard label="Cuti" value={summary.totalLeave} icon={<AlertCircle />} color="text-rose-600" bg="bg-rose-50" />
+            <StatCard label="Lembur" value={summary.totalOvertime} icon={<Briefcase />} color="text-indigo-600" bg="bg-indigo-50" />
           </div>
         )}
 
-        {/* TABLE SECTION */}
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Data Kehadiran Personil</h3>
-            <div className="flex items-center gap-2 text-[9px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-widest">
-              <Database size={10} strokeWidth={3} /> HR Core System
-            </div>
-          </div>
-
+        {/* DATA TABLE */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-white text-left">
-                  <th className="px-8 py-6 text-center w-16">No</th>
-                  <th className="px-8 py-6">Karyawan & Posisi</th>
-                  <th className="px-8 py-6">Departemen</th>
-                  <th className="px-8 py-6 text-center">Hadir</th>
-                  <th className="px-8 py-6 text-center">Telat</th>
-                  <th className="px-8 py-6 text-center">Cuti</th>
-                  <th className="px-8 py-6 text-center bg-slate-50/50 font-black text-slate-900 italic">Lembur</th>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="p-4 font-semibold text-slate-600">No</th>
+                  <th className="p-4 font-semibold text-slate-600">Karyawan</th>
+                  <th className="p-4 font-semibold text-slate-600">Departemen</th>
+                  <th className="p-4 font-semibold text-slate-600 text-center">Hadir</th>
+                  <th className="p-4 font-semibold text-slate-600 text-center text-amber-600">Telat</th>
+                  <th className="p-4 font-semibold text-slate-600 text-center text-rose-600">Cuti</th>
+                  <th className="p-4 font-semibold text-slate-600 text-center text-indigo-600">Lembur</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50 bg-white">
-                {tableData.length > 0 ? tableData.map((r, i) => (
-                  <tr key={i} className="hover:bg-slate-50/80 transition-all group">
-                    <td className="px-8 py-6 text-center font-bold text-slate-300 group-hover:text-indigo-600 transition-colors">{i + 1}</td>
-                    <td className="px-8 py-6">
-                      <p className="font-black text-slate-800 uppercase tracking-tight text-sm leading-tight">{r.name}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{r.position}</p>
+              <tbody className="divide-y divide-slate-100">
+                {tableData.map((r, i) => (
+                  <tr key={i} className="hover:bg-slate-50 transition-colors">
+                    <td className="p-4 text-slate-500 text-sm">{i + 1}</td>
+                    <td className="p-4">
+                      <div className="font-medium text-slate-900">{r.name}</div>
+                      <div className="text-xs text-slate-500">{r.position}</div>
                     </td>
-                    <td className="px-8 py-6">
-                      <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-md text-[10px] font-black uppercase">
-                        {r.department}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6 text-center">
-                      <span className="text-emerald-600 font-black">{r.attendance}</span>
-                    </td>
-                    <td className="px-8 py-6 text-center">
-                      <span className={`${r.late > 0 ? "text-amber-500 font-black" : "text-slate-300 font-medium"}`}>
-                        {r.late}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6 text-center">
-                      <span className={`${r.leave > 0 ? "text-rose-500 font-black" : "text-slate-300 font-medium"}`}>
-                        {r.leave}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6 text-center font-black text-indigo-600 bg-slate-50/30 group-hover:bg-indigo-50/50 transition-colors">
-                      {r.overtime} <span className="text-[9px] font-bold text-slate-400">JAM</span>
-                    </td>
+                    <td className="p-4 text-slate-600">{r.department}</td>
+                    <td className="p-4 text-center font-semibold text-slate-700">{r.attendance}</td>
+                    <td className="p-4 text-center font-semibold text-amber-600 bg-amber-50/30">{r.late}</td>
+                    <td className="p-4 text-center font-semibold text-rose-600">{r.leave}</td>
+                    <td className="p-4 text-center font-semibold text-indigo-600">{r.overtime}</td>
                   </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={7} className="py-24 text-center opacity-30">
-                      <div className="flex flex-col items-center">
-                        <Search size={48} className="mb-4" />
-                        <p className="text-xs font-black uppercase tracking-widest">Klik Generate Untuk Data</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
+
+          {tableData.length === 0 && !loading && (
+            <div className="p-20 text-center flex flex-col items-center justify-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <Database className="text-slate-300" size={40} />
+              </div>
+              <h3 className="text-lg font-medium text-slate-900">Belum Ada Data</h3>
+              <p className="text-slate-500 max-w-xs mx-auto mt-1">
+                Silakan pilih periode dan klik tombol Generate untuk menarik laporan.
+              </p>
+            </div>
+          )}
+
+          {loading && (
+             <div className="p-20 text-center flex flex-col items-center justify-center">
+                <Loader2 className="animate-spin text-indigo-600 mb-4" size={40} />
+                <p className="text-slate-500">Menyusun laporan...</p>
+             </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// Sub-Komponen Card Statistik
-function StatCard({ label, value, icon, color, bg, unit }: any) {
+// Komponen StatCard yang ditingkatkan
+function StatCard({ label, value, icon, color, bg }: any) {
   return (
-    <div className="bg-white p-5 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-4 group hover:-translate-y-1 transition-all duration-300">
-      <div className={`${bg} ${color} w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform`}>
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 transition-transform hover:scale-[1.02]">
+      <div className={`p-3 ${bg} ${color} rounded-xl`}>
         {icon}
       </div>
-      <div className="flex flex-col">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{label}</p>
-        <div className="flex items-baseline gap-1.5">
-          <h4 className="text-lg font-black text-slate-900 tracking-tighter uppercase leading-none tabular-nums">{value}</h4>
-          <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">{unit}</span>
-        </div>
+      <div>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+        <h3 className="text-2xl font-black text-slate-800">{value.toLocaleString()}</h3>
       </div>
     </div>
   );

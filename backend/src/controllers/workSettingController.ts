@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as workSettingService from "../service/workSettingService";
 
+// GET WORK SETTING
 export async function getSetting(req: Request, res: Response) {
   try {
     const setting = await workSettingService.getWorkSetting();
@@ -10,6 +11,7 @@ export async function getSetting(req: Request, res: Response) {
   }
 }
 
+// UPDATE WORK SETTING
 export async function updateSetting(req: Request, res: Response) {
   try {
     const { work_start_time, work_end_time, work_days } = req.body; // ✅ snake_case

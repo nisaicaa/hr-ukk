@@ -4,6 +4,7 @@ import { LeaveStatus, LeaveType } from "@prisma/client";
 import path from 'path';
 import fs from 'fs/promises';
 
+// CREATE LEAVE
 export async function createLeave(data: {
   id_employee: number;
   leave_type: LeaveType;
@@ -20,6 +21,7 @@ export async function createLeave(data: {
   });
 }
 
+// GET ALL LEAVE (HR / ADMIN)
 export async function getAllLeave() {
   return prisma.leave.findMany({
     include: {
@@ -30,6 +32,7 @@ export async function getAllLeave() {
   });
 }
 
+// GET LEAVE BY EMPLOYEE
 export async function getLeaveByEmployee(id_employee: number) {
   return prisma.leave.findMany({
     where: { id_employee },
@@ -40,13 +43,14 @@ export async function getLeaveByEmployee(id_employee: number) {
   });
 }
 
+// UPDATE LEAVE STATUS (HR / ADMIN)
 export async function updateLeaveStatus(
   id_leave: number,
   status: LeaveStatus,
   approved_by: number
 ) {
   return prisma.leave.update({
-    where: { id_leave }, // ✅ Pastikan id_leave adalah @id di schema
+    where: { id_leave }, // Pastikan id_leave adalah @id di schema
     data: {
       leave_status: status,
       approved_by,
@@ -58,11 +62,11 @@ export async function updateLeaveStatus(
   });
 }
 
-// ✅ FIXED - Gunakan findFirst instead of findUnique
+// FIXED - Gunakan findFirst instead of findUnique
 export async function getLeaveById(id_leave: number) {
   return prisma.leave.findFirst({
     where: { 
-      id_leave // ✅ Simple where clause
+      id_leave // Simple where clause
     },
     include: {
       employee: true,
@@ -70,7 +74,7 @@ export async function getLeaveById(id_leave: number) {
   });
 }
 
-// ✅ FIXED - Bulk delete untuk multiple IDs
+// FIXED - Bulk delete untuk multiple IDs
 export async function bulkDeleteLeaves(ids: number[]) {
   const leaves = await prisma.leave.findMany({
     where: {
@@ -104,9 +108,9 @@ export async function deleteAttachment(filename: string) {
   try {
     const filePath = path.join(process.cwd(), 'uploads', filename);
     await fs.unlink(filePath);
-    console.log(`✅ Attachment deleted: ${filename}`);
+    console.log(` Attachment deleted: ${filename}`);
   } catch (error) {
-    console.warn(`⚠️ Failed to delete attachment ${filename}:`, error);
+    console.warn(`Failed to delete attachment ${filename}:`, error);
   }
 }
 

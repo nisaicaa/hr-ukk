@@ -1,11 +1,12 @@
 // controllers/payrollController.ts - LENGKAP & READY
 import { Request, Response } from "express";
 import { PrismaClient } from '@prisma/client';
-import * as payrollService from "../service/payrollService";
+import * as payrollService from "../service/PayrollService";
 import * as logService from "../service/logService";
 
 const prisma = new PrismaClient();
 
+// GET ALL PAYROLL (HR/Admin)
 export async function getAllPayroll(req: Request, res: Response) {
   try {
     const payrolls = await payrollService.getAllPayroll();
@@ -15,6 +16,7 @@ export async function getAllPayroll(req: Request, res: Response) {
   }
 }
 
+// GET PAYROLL BY EMPLOYEE (HR/Admin untuk semua employee, Employee untuk dirinya sendiri)
 export async function getPayrollByEmployee(req: Request, res: Response) {
   try {
     const { id_employee } = req.params;
@@ -25,6 +27,7 @@ export async function getPayrollByEmployee(req: Request, res: Response) {
   }
 }
 
+// GET MY PAYROLL (EMPLOYEE)
 export async function getMyPayroll(req: Request, res: Response) {
   try {
     const user = req.user!;
@@ -57,6 +60,7 @@ export async function getMyPayroll(req: Request, res: Response) {
   }
 }
 
+// GENERATE PAYROLL (HR/Admin)
 export async function generatePayroll(req: Request, res: Response) {
   try {
     const { periode_month, periode_year } = req.body;
@@ -91,6 +95,7 @@ export async function generatePayroll(req: Request, res: Response) {
   }
 }
 
+// GENERATE PAYSLIP (HR/Admin)
 export async function generatePayslip(req: Request, res: Response) {
   try {
     const { id_payroll } = req.params;
@@ -111,6 +116,7 @@ export async function generatePayslip(req: Request, res: Response) {
   }
 }
 
+// GET PAYROLL BY MONTH (HR/Admin)
 export async function getPayrollByMonth(req: Request, res: Response) {
   try {
     const { periode_month, periode_year } = req.query;
@@ -124,6 +130,7 @@ export async function getPayrollByMonth(req: Request, res: Response) {
   }
 }
 
+// DELETE PAYROLL BY ID (HR/Admin)
 export async function deletePayroll(req: Request, res: Response) {
   try {
     const { id } = req.params;

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as logService from "../service/logService";
 
+// Get all logs with optional date filters
 export async function getLogs(req: Request, res: Response) {
   try {
 

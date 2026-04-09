@@ -102,7 +102,7 @@ function App() {
                   type="email"
                   required
                   className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-emerald-50 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
-                  placeholder="name@company.com"
+                  placeholder=""
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
