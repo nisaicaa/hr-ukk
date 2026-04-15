@@ -40,7 +40,6 @@ function App() {
         throw new Error(data.message || 'Email atau password salah');
       }
 
-      // We still set them here for the login app state if needed
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
@@ -52,8 +51,6 @@ function App() {
       };
       
       const targetPort = portMap[data.user.role] || '3011';
-      
-      // CRITICAL: Pass token and user via query params to cross the port boundary
       const userParam = encodeURIComponent(JSON.stringify(data.user));
       window.location.href = `http://localhost:${targetPort}/dashboard?token=${data.token}&user=${userParam}`;
 
@@ -69,14 +66,13 @@ function App() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-100">
           
-          {/* Top Section - Smaller Height */}
-          <div className="bg-emerald-600 px-8 py-10 text-center relative overflow-hidden">
+          {/* Top Section - Color changed to #547792 */}
+          <div className="bg-[#547792] px-8 py-10 text-center relative overflow-hidden">
             {/* Abstract Background patterns */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-emerald-500 rounded-full -ml-10 -mb-10 blur-xl opacity-50"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#213448] rounded-full -ml-10 -mb-10 blur-xl opacity-30"></div>
             
             <div className="relative z-10 flex flex-col items-center">
-              {/* Larger Logo */}
               <img src="/logo.png" alt="Logo" className="h-[120px] w-auto brightness-0 invert object-contain transition-transform hover:scale-105 duration-300" />
             </div>
           </div>
@@ -97,11 +93,11 @@ function App() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Alamat Email</label>
               <div className="relative group">
-                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
+                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#547792] transition-colors" />
                 <input
                   type="email"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-emerald-50 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-[#547792]/5 focus:border-[#547792] outline-none transition-all placeholder:text-slate-300"
                   placeholder=""
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -112,11 +108,11 @@ function App() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Kata Sandi</label>
               <div className="relative group">
-                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
+                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#547792] transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-emerald-50 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-[#547792]/5 focus:border-[#547792] outline-none transition-all placeholder:text-slate-300"
                   placeholder=""
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -131,10 +127,11 @@ function App() {
               </div>
             </div>
 
+            {/* Submit Button - Color changed to #547792 */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black text-sm transition-all shadow-xl shadow-emerald-100 flex items-center justify-center gap-2 active:scale-[0.98]"
+              className="w-full bg-[#547792] hover:bg-[#46637a] text-white py-4 rounded-2xl font-black text-sm transition-all shadow-xl shadow-[#547792]/20 flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               {loading ? (
                 <>
@@ -148,7 +145,7 @@ function App() {
           </form>
           
           <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 text-center">
-             <p className="text-[10px] font-black text-slate-400 tracking-[0.2em]">2026 humanet</p>
+             <p className="text-[10px] font-black text-slate-400 tracking-[0.2em]">2026 HUMANEST</p>
           </div>
         </div>
       </div>

@@ -31,30 +31,50 @@ export async function getPayrollByEmployee(req: Request, res: Response) {
 export async function getMyPayroll(req: Request, res: Response) {
   try {
     const user = req.user!;
-    
+    const { year } = req.query;
+
     const employee = await prisma.employee.findFirst({
-      where: { id_user: user.id_user }
+      where: { id_user: user.id_user },
+      include: { user: true }
     });
-    
+
     if (!employee) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Employee record tidak ditemukan" 
+      return res.status(404).json({
+        success: false,
+        message: "Employee record tidak ditemukan"
       });
     }
-    
+
+    const whereClause: any = {
+      id_employee: employee.id_employee
+    };
+
+    // Filter berdasarkan tahun (opsional)
+    if (year) {
+      whereClause.periode_year = Number(year);
+    }
+
     const payrolls = await prisma.payroll.findMany({
-      where: { id_employee: employee.id_employee },
+      where: whereClause,
       include: {
-        employee: {
-          include: { user: true }
-        },
+        employee: true,
         payslips: true
       },
-      orderBy: { created_date: 'desc' }
+      orderBy: [
+        { periode_year: "desc" },
+        { periode_month: "desc" }
+      ]
     });
-    
-    res.json({ success: true, data: payrolls });
+
+    res.json({
+      success: true,
+      data: payrolls,
+      employee: {
+        full_name: employee.full_name,
+        nik: employee.nik,
+        hire_date: employee.hire_date
+      }
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

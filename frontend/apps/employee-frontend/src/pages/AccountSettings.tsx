@@ -1,240 +1,240 @@
 import { useState, useEffect } from 'react';
-import { getUser } from '../../../../services/helper/auth';
-import { User, Mail, Save, ArrowLeft, Phone, Camera, Loader2, Briefcase, Pencil, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Phone, Camera, Loader2, Pencil, X, Save, ShieldCheck, Mail, User, Fingerprint, ChevronRight, Globe, Zap } from 'lucide-react';
 import apiClient from '../../../../services/api';
 import { handleError } from '../../../../services/handler/error';
 import { showSuccess, showToast } from '../../../../services/helper/swal';
 
 const AccountSettingsEmployee = () => {
   const navigate = useNavigate();
-  const currentUser = getUser();
-
   const [userData, setUserData] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    phone_number: '',
-  });
-
+  const [formData, setFormData] = useState({ phone_number: '' });
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
+  useEffect(() => { fetchUserData(); }, []);
 
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get('/employees/me');
-      const data = res.data.data;
-
+      const { data: { data } } = await apiClient.get('/employees/me');
       setUserData(data);
-      setFormData({
-        phone_number: data.phone_number || '',
-      });
-
-      // ✅ PASTIKAN URL INI BENAR (SESUAI KODE ASLI ANDA)
+      setFormData({ phone_number: data.phone_number || '' });
       if (data.profile_picture) {
         setPreviewUrl(`${import.meta.env.VITE_API_URL}/uploads/profiles/${data.profile_picture}`);
       }
-
-    } catch (error) {
-      showToast("Gagal memuat profil", "error");
-    } finally {
-      setLoading(false);
-    }
+    } catch { showToast("Gagal memuat profil", "error"); }
+    finally { setLoading(false); }
   };
 
-  const handleFileChange = (e: any) => {
-    if (!isEdit) return;
-    const file = e.target.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       setProfilePicture(file);
-      setPreviewUrl(URL.createObjectURL(file)); // Preview foto saat pilih file
+      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-
     try {
       const form = new FormData();
       form.append('phone_number', formData.phone_number);
-      if (profilePicture) {
-        form.append('profile_picture', profilePicture);
-      }
+      if (profilePicture) form.append('profile_picture', profilePicture);
 
-      await apiClient.put('/employees/me', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      showSuccess("Berhasil", "Profil berhasil diperbarui!");
+      await apiClient.put('/employees/me', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      showSuccess("Berhasil", "Profil diperbarui!");
       setIsEdit(false);
       fetchUserData();
-    } catch (error) {
-      showToast(handleError(error), "error");
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { showToast(handleError(err), "error"); }
+    finally { setSaving(false); }
   };
 
-  if (loading) {
-    return (
-      <div className='min-h-screen flex items-center justify-center bg-slate-50'>
-        <Loader2 className='animate-spin text-emerald-500' size={32} />
+  if (loading) return (
+    <div className='min-h-screen flex items-center justify-center bg-white'>
+      <div className="flex flex-col items-center">
+        <Loader2 className='animate-spin text-[#213448]' size={32} strokeWidth={3} />
+        <p className="mt-4 text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">HumaNest OS</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12 animate-in fade-in duration-700">
+    <div className="min-h-screen bg-[#FDFDFD] pb-24 font-sans text-[#213448]">
       
-      {/* HEADER NAVIGATION */}
-      <div className="flex items-center gap-4 mt-6">
-        <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl shadow-sm">
-          <ArrowLeft size={20} className="text-slate-600" />
-        </button>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Pengaturan Profil</h1>
-      </div>
+      {/* NIKMATI NAVIGASI MINIMALIS */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-50 transition-all border border-slate-100"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="h-6 w-[1px] bg-slate-200 mx-2 hidden sm:block"></div>
+            <h1 className="text-lg font-black tracking-tight">Profil Pengguna</h1>
+          </div>
+          
+          {!isEdit && (
+            <button 
+              onClick={() => setIsEdit(true)} 
+              className="px-6 py-2.5 bg-[#213448] text-white rounded-full text-[11px] font-bold uppercase tracking-widest hover:shadow-lg hover:shadow-slate-200 transition-all active:scale-95 flex items-center gap-2"
+            >
+              <Pencil size={14} /> Edit
+            </button>
+          )}
+        </div>
+      </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* PROFILE CARD */}
-        <div className="lg:col-span-1">
-          <div className="bg-white border border-slate-100 rounded-[40px] p-8 shadow-sm flex flex-col items-center text-center">
-            
-            <div className="relative">
-              {/* CONTAINER FOTO - Menggunakan overflow-hidden agar gambar tidak keluar jalur */}
-              <div className="w-32 h-32 rounded-[35px] border-[6px] border-slate-50 shadow-inner overflow-hidden bg-slate-100 flex items-center justify-center">
+      <main className="max-w-6xl mx-auto px-6 mt-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          
+          {/* SISI KIRI: IDENTITAS VISUAL */}
+          <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-8 duration-700">
+            <div className="relative group mx-auto lg:mx-0 w-max">
+              <div className="w-56 h-56 rounded-[60px] overflow-hidden bg-slate-50 border border-slate-100 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-transform group-hover:scale-[1.02] duration-500">
                 {previewUrl ? (
-                  <img 
-                    src={previewUrl} 
-                    className="w-full h-full object-cover" 
-                    alt="Profile" 
-                    onError={(e) => {
-                       // Jika URL gambar error (404), tampilkan inisial
-                       e.currentTarget.style.display = 'none';
-                    }}
-                  />
+                  <img src={previewUrl} className="w-full h-full object-cover" alt="User" />
                 ) : (
-                  <div className="text-4xl font-bold text-slate-300">
-                    {userData?.user?.username?.[0]}
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+                    <User size={80} className="text-slate-200" />
                   </div>
                 )}
               </div>
-
-              {/* INPUT FILE OVERLAY */}
+              
               {isEdit && (
-                <label className="absolute -bottom-2 -right-2 p-2.5 bg-emerald-600 text-white rounded-xl shadow-lg cursor-pointer hover:bg-emerald-700 transition-all active:scale-90">
-                  <Camera size={18} />
+                <label className="absolute bottom-4 -right-2 p-4 bg-white text-[#213448] rounded-[24px] shadow-2xl cursor-pointer hover:bg-emerald-500 hover:text-white transition-all border border-slate-100 group">
+                  <Camera size={20} />
                   <input type="file" onChange={handleFileChange} className="hidden" accept="image/*" />
                 </label>
               )}
             </div>
 
-            <div className="mt-6">
-              <h2 className="font-bold text-xl text-slate-800">{userData?.user?.username}</h2>
-              <p className="text-emerald-600 font-bold text-sm uppercase mt-1">{userData?.jabatan}</p>
-              <p className="text-slate-400 text-sm mt-2">{userData?.user?.email}</p>
+            <div className="space-y-2">
+              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">Verified Employee</p>
+              <h2 className="text-4xl font-black tracking-tighter leading-none">{userData?.user?.username}</h2>
+              <p className="text-slate-400 font-medium">{userData?.user?.email}</p>
+            </div>
+
+            <div className="pt-8 grid grid-cols-1 gap-4">
+              <div className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-[28px] hover:border-slate-300 transition-all cursor-default group">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-all">
+                    <Fingerprint size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Employee ID</p>
+                    <p className="text-sm font-bold tracking-tight">{userData?.nik || 'NH-09228'}</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-slate-200" />
+              </div>
+
+              <div className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-[28px] hover:border-slate-300 transition-all cursor-default group">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
+                    <Globe size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Struktural</p>
+                    <p className="text-sm font-bold tracking-tight">{userData?.jabatan}</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-slate-200" />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* FORM DATA */}
-        <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="bg-white border border-slate-100 rounded-[50px] p-10 shadow-sm space-y-8">
-            
-            <div className="flex justify-between items-center border-b border-slate-50 pb-6">
-              <h2 className="text-lg font-bold text-slate-800">Informasi Pribadi</h2>
-              {!isEdit && (
-                <button
-                  type="button"
-                  onClick={() => setIsEdit(true)}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-slate-800 text-white rounded-2xl text-sm font-bold shadow-lg shadow-slate-100 active:scale-95 transition-all"
-                >
-                  <Pencil size={16} /> Edit
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Username (Read Only) */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Username</label>
-                <input
-                  value={userData?.user?.username || ''}
-                  disabled
-                  className="w-full p-4 bg-slate-50 border-none rounded-3xl text-slate-500 font-medium"
-                />
-              </div>
-
-              {/* Email (Read Only) */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-                <input
-                  value={userData?.user?.email || ''}
-                  disabled
-                  className="w-full p-4 bg-slate-50 border-none rounded-3xl text-slate-500 font-medium"
-                />
-              </div>
-
-              {/* Jabatan (Read Only) */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Jabatan</label>
-                <input
-                  value={userData?.jabatan || ''}
-                  disabled
-                  className="w-full p-4 bg-slate-50 border-none rounded-3xl text-slate-500 font-medium"
-                />
-              </div>
-
-              {/* Phone (Editable) */}
-              <div className="space-y-2">
-                <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${isEdit ? 'text-emerald-600' : 'text-slate-400'}`}>No Handphone</label>
-                <div className="relative">
-                   <Phone size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 ${isEdit ? 'text-emerald-500' : 'text-slate-300'}`} />
-                   <input
-                    value={formData.phone_number}
-                    onChange={(e) => setFormData({ phone_number: e.target.value })}
-                    disabled={!isEdit}
-                    placeholder="Masukkan No HP"
-                    className={`w-full pl-12 pr-4 py-4 rounded-3xl font-bold transition-all
-                      ${isEdit ? 'bg-white border-2 border-emerald-100 ring-4 ring-emerald-50/50' : 'bg-slate-50 border-none text-slate-600'}`}
-                  />
+          {/* SISI KANAN: FORM MINIMALIS */}
+          <div className="lg:col-span-8 animate-in fade-in slide-in-from-right-8 duration-700 delay-150">
+            <form onSubmit={handleSubmit} className="space-y-12">
+              
+              <section className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <Zap size={16} />
+                  </div>
+                  <h3 className="font-black text-lg tracking-tight">Informasi Dasar</h3>
                 </div>
-              </div>
-            </div>
 
-            {isEdit && (
-              <div className="flex gap-4 pt-4 animate-in slide-in-from-bottom-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 py-4 bg-emerald-600 text-white rounded-[25px] font-bold text-lg shadow-xl shadow-emerald-100 active:scale-95 transition-all"
-                >
-                  {saving ? "Menyimpan..." : "Simpan Perubahan"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEdit(false);
-                    // Reset preview ke foto lama jika batal
-                    setPreviewUrl(userData?.profile_picture ? `${import.meta.env.VITE_API_URL}/uploads/profiles/${userData.profile_picture}` : '');
-                  }}
-                  className="px-8 py-4 bg-slate-100 text-slate-500 rounded-[25px] font-bold active:scale-95 transition-all"
-                >
-                  Batal
-                </button>
-              </div>
-            )}
-          </form>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+                  {/* INPUT CUSTOM STYLE */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Nama Pengguna</label>
+                    <input 
+                      disabled 
+                      value={userData?.user?.username} 
+                      className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-400 cursor-not-allowed" 
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Posisi / Role</label>
+                    <input 
+                      disabled 
+                      value={userData?.jabatan} 
+                      className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-400 cursor-not-allowed" 
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 space-y-3">
+                    <label className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                      Nomor Telepon {isEdit && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                    </label>
+                    <div className="relative group">
+                      <Phone className={`absolute left-6 top-1/2 -translate-y-1/2 transition-colors ${isEdit ? 'text-[#213448]' : 'text-slate-300'}`} size={18} />
+                      <input 
+                        disabled={!isEdit}
+                        value={formData.phone_number}
+                        onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                        placeholder="08xx xxxx xxxx"
+                        className={`w-full pl-16 pr-6 py-5 rounded-[24px] font-black text-lg transition-all border-2 
+                          ${isEdit 
+                            ? 'bg-white border-[#213448] shadow-[0_10px_30px_rgba(33,52,72,0.08)]' 
+                            : 'bg-white border-slate-100 text-slate-400'}`} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {isEdit ? (
+                <div className="flex flex-col sm:flex-row gap-4 animate-in zoom-in-95 duration-300">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-[2] bg-[#213448] text-white py-5 rounded-[28px] font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl shadow-slate-200"
+                  >
+                    {saving ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18} /> Simpan Perubahan</>}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEdit(false)}
+                    className="flex-1 bg-slate-50 text-slate-500 py-5 rounded-[28px] font-black text-xs uppercase tracking-[0.3em] hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center justify-center gap-2"
+                  >
+                    <X size={18} /> Batalkan
+                  </button>
+                </div>
+              ) : (
+                <div className="p-8 rounded-[40px] bg-slate-50 border border-slate-100/50 flex flex-col sm:flex-row items-center gap-6">
+                  <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-slate-100">
+                    <ShieldCheck className="text-emerald-500" size={28} />
+                  </div>
+                  <div className="text-center sm:text-left">
+                    <p className="font-black text-sm tracking-tight">Keamanan Akun Terjamin</p>
+                    <p className="text-xs text-slate-400 font-medium mt-1">Data sensitif Anda dienkripsi secara end-to-end oleh sistem HumaNest.</p>
+                  </div>
+                </div>
+              )}
+            </form>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

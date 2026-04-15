@@ -34,70 +34,66 @@ const LogActivityPage = () => {
     }
   };
 
+  const getActionColor = (action: string) => {
+    switch (action.toUpperCase()) {
+      case "CREATE": return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case "UPDATE": return "bg-amber-100 text-amber-700 border-amber-200";
+      case "DELETE": return "bg-rose-100 text-rose-700 border-rose-200";
+      default: return "bg-slate-100 text-slate-700 border-slate-200";
+    }
+  };
+
   return (
-    <div style={{ 
-      padding: '24px', 
-      backgroundColor: '#f8fafc', 
-      minHeight: '100%', 
-      fontFamily: "'Inter', sans-serif" 
-    }}>
+    <div className="p-6 space-y-6 bg-slate-50 min-h-screen font-sans">
       
-      {/* HEADER */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '16px', 
-        marginBottom: '28px',
-        backgroundColor: 'white',
-        padding: '20px',
-        borderRadius: '16px',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-      }}>
-        <div style={{ 
-          backgroundColor: '#eff6ff', 
-          padding: '10px', 
-          borderRadius: '12px',
-          color: '#2563eb'
-        }}>
-          <History size={28} />
-        </div>
-        <div>
-          <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#1e293b', margin: 0 }}>
-            Log Aktivitas Sistem
-          </h1>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
-            Pantau seluruh riwayat perubahan dan aksi pengguna dalam sistem.
-          </p>
+      {/* HEADER SECTION - Selaras dengan User Management */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex items-center gap-4">
+          <div className="bg-[#213448]/10 p-3 rounded-xl text-[#213448]">
+            <History size={28} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold text-[#213448]">Log Aktivitas Sistem</h1>
+            <p className="text-slate-500 text-sm">Pantau seluruh riwayat perubahan dan aksi pengguna dalam sistem</p>
+          </div>
         </div>
       </div>
 
       {/* FILTER SECTION */}
-      <div style={{
-        backgroundColor: 'white',
-        padding: '24px',
-        borderRadius: '16px',
-        marginBottom: '24px',
-        border: '1px solid #e2e8f0'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', color: '#475569' }}>
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex items-center gap-2 mb-6 text-[#547792]">
           <Filter size={18} />
-          <span style={{ fontWeight: '600' }}>Filter Data</span>
+          <span className="font-bold uppercase text-xs tracking-wider">Filter Data</span>
         </div>
         
-        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>
-          <div style={inputGroupStyle}>
-            <label style={labelStyle}>Dari Tanggal</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-bold text-slate-400 uppercase ml-1">Dari Tanggal</label>
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)} 
+              className="pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-[#547792]/5 focus:border-[#547792] outline-none transition-all text-sm text-slate-700"
+            />
           </div>
 
-          <div style={inputGroupStyle}>
-            <label style={labelStyle}>Sampai Tanggal</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-bold text-slate-400 uppercase ml-1">Sampai Tanggal</label>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)} 
+              className="pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-[#547792]/5 focus:border-[#547792] outline-none transition-all text-sm text-slate-700"
+            />
           </div>
 
-          <div style={inputGroupStyle}>
-            <label style={labelStyle}>Bulan</label>
-            <select value={month} onChange={(e) => setMonth(e.target.value)} style={inputStyle}>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-bold text-slate-400 uppercase ml-1">Bulan</label>
+            <select 
+              value={month} 
+              onChange={(e) => setMonth(e.target.value)} 
+              className="pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-[#547792]/5 focus:border-[#547792] outline-none transition-all text-sm text-slate-700"
+            >
               <option value="">Semua Bulan</option>
               {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
                 <option key={i + 1} value={i + 1}>{m}</option>
@@ -105,12 +101,21 @@ const LogActivityPage = () => {
             </select>
           </div>
 
-          <div style={inputGroupStyle}>
-            <label style={labelStyle}>Tahun</label>
-            <input type="number" placeholder="2026" value={year} onChange={(e) => setYear(e.target.value)} style={{ ...inputStyle, width: "100px" }} />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-bold text-slate-400 uppercase ml-1">Tahun</label>
+            <input 
+              type="number" 
+              placeholder="2026" 
+              value={year} 
+              onChange={(e) => setYear(e.target.value)} 
+              className="pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-[#547792]/5 focus:border-[#547792] outline-none transition-all text-sm text-slate-700 w-28"
+            />
           </div>
 
-          <button onClick={fetchLogs} style={buttonStyle}>
+          <button 
+            onClick={fetchLogs} 
+            className="bg-[#547792] hover:bg-[#456279] text-white px-6 py-2.5 rounded-xl flex gap-2 items-center transition-all shadow-md shadow-slate-200 font-bold text-sm"
+          >
             <Search size={18} />
             Terapkan Filter
           </button>
@@ -118,91 +123,73 @@ const LogActivityPage = () => {
       </div>
 
       {/* TABLE SECTION */}
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '16px',
-        border: '1px solid #e2e8f0',
-        overflow: 'hidden'
-      }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-              <th style={thStyle}>WAKTU</th>
-              <th style={thStyle}>ADMIN</th>
-              <th style={thStyle}>AKSI</th>
-              <th style={thStyle}>TABEL</th>
-              <th style={thStyle}>DESKRIPSI</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Memuat data...</td></tr>
-            ) : logs.length > 0 ? (
-              logs.map((log) => (
-                <tr key={log.id_log} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={tdStyle}>
-                    <div style={{ fontWeight: '600', color: '#334155' }}>
-                      {new Date(log.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                      {new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </td>
-                  <td style={tdStyle}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                        {log.user?.username?.charAt(0).toUpperCase() || 'S'}
-                      </div>
-                      <span style={{ fontWeight: '500' }}>{log.user?.username || 'System'}</span>
-                    </div>
-                  </td>
-                  <td style={tdStyle}>
-                    <span style={{ ...badgeStyle, ...getActionColor(log.action) }}>{log.action}</span>
-                  </td>
-                  <td style={tdStyle}>
-                    <code style={{ backgroundColor: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', fontSize: '13px', color: '#475569' }}>
-                      {log.table_name}
-                    </code>
-                  </td>
-                  <td style={{ ...tdStyle, color: '#64748b', fontSize: '14px' }}>{log.description}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} style={{ padding: '60px', textAlign: 'center' }}>
-                  <CalendarDays size={48} style={{ color: '#cbd5e1', marginBottom: '12px' }} />
-                  <p style={{ color: '#94a3b8', margin: 0 }}>Tidak ada data aktivitas ditemukan</p>
-                </td>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-200">
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Waktu</th>
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Admin</th>
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Aksi</th>
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Tabel</th>
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Deskripsi</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="p-10 text-center text-slate-400 font-medium">Memuat data...</td>
+                </tr>
+              ) : logs.length > 0 ? (
+                logs.map((log) => (
+                  <tr key={log.id_log} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-5">
+                      <div className="font-bold text-[#213448]">
+                        {new Date(log.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        {new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </td>
+                    <td className="p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[#213448] font-bold text-xs border border-slate-200">
+                          {log.user?.username?.charAt(0).toUpperCase() || 'S'}
+                        </div>
+                        <span className="font-semibold text-slate-700">{log.user?.username || 'Sistem'}</span>
+                      </div>
+                    </td>
+                    <td className="p-5">
+                      <span className={`px-3 py-1 rounded-lg text-[10px] font-bold border uppercase tracking-wider ${getActionColor(log.action)}`}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="p-5">
+                      <code className="bg-slate-100 text-[#547792] px-2 py-1 rounded-md text-xs font-bold border border-slate-200">
+                        {log.table_name}
+                      </code>
+                    </td>
+                    <td className="p-5 text-slate-600 text-sm leading-relaxed">
+                      {log.description}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="p-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <CalendarDays size={48} className="text-slate-200" />
+                      <p className="text-slate-400 font-medium">Tidak ada data aktivitas ditemukan</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
-};
-
-// Styles
-const inputGroupStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '6px' };
-const labelStyle: React.CSSProperties = { fontSize: '13px', fontWeight: '600', color: '#64748b' };
-const inputStyle: React.CSSProperties = { padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', outline: 'none', fontSize: '14px' };
-const thStyle: React.CSSProperties = { padding: '16px', textAlign: 'left', fontSize: '12px', color: '#64748b', fontWeight: '700' };
-const tdStyle: React.CSSProperties = { padding: '16px' };
-const badgeStyle: React.CSSProperties = { padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' };
-
-const buttonStyle: React.CSSProperties = {
-  backgroundColor: "#2563eb", color: "white", border: "none", padding: "0 20px", 
-  borderRadius: "8px", cursor: "pointer", fontWeight: "600", height: "40px",
-  display: 'flex', alignItems: 'center', gap: '8px'
-};
-
-const getActionColor = (action: string) => {
-  switch (action) {
-    case "CREATE": return { backgroundColor: '#dcfce7', color: '#15803d' };
-    case "UPDATE": return { backgroundColor: '#fef3c7', color: '#b45309' };
-    case "DELETE": return { backgroundColor: '#fee2e2', color: '#b91c1c' };
-    default: return { backgroundColor: '#f1f5f9', color: '#475569' };
-  }
 };
 
 export default LogActivityPage;

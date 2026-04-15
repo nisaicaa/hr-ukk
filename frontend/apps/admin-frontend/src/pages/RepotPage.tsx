@@ -57,7 +57,7 @@ export default function AdminReport() {
     const dateLabel = new Date(year, month - 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 
     doc.setFontSize(18);
-    doc.setTextColor(5, 150, 105); // Emerald 600
+    doc.setTextColor(33, 52, 72); // Navy Dark (#213448)
     doc.text("HUMANEST GLOBAL REPORT", 14, 20);
     doc.setFontSize(11);
     doc.setTextColor(100, 116, 139);
@@ -73,7 +73,7 @@ export default function AdminReport() {
         ["Kedisiplinan", "Total Keterlambatan", `${data.totalLate} Kali`],
         ["Izin/Cuti", "Total Absen", `${data.totalLeave} Kali`],
       ],
-      headStyles: { fillColor: [5, 150, 105] },
+      headStyles: { fillColor: [33, 52, 72] }, // Navy Dark Header PDF
     });
     doc.save(`Admin_Report_${month}_${year}.pdf`);
   };
@@ -82,32 +82,32 @@ export default function AdminReport() {
     <div className="p-8 bg-slate-50 min-h-screen font-sans">
       <div className="max-w-5xl mx-auto space-y-6">
         
-        {/* HEADER */}
+        {/* HEADER - Updated to #213448 */}
         <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+            <div className="p-2.5 bg-[#213448]/10 text-[#213448] rounded-xl">
               <LayoutDashboard size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Admin Global Report</h1>
-              <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">Operational Summary</p>
+              <h1 className="text-xl font-extrabold text-[#213448]">Admin Global Report</h1>
+              <p className="text-xs text-slate-500 font-bold tracking-widest uppercase">Operational Summary</p>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-full text-slate-600">
-            <Calendar size={16} className="text-emerald-600" />
-            <span className="text-sm font-semibold">
+          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-full text-[#547792]">
+            <Calendar size={16} />
+            <span className="text-sm font-bold">
               {new Date(year, month - 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
             </span>
           </div>
         </div>
 
-        {/* FILTER BOX */}
+        {/* FILTER BOX - Focus colors updated to #547792 */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-3 flex-1">
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
-              className="bg-slate-50 border border-slate-200 text-slate-700 p-2 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none w-full md:w-48 transition-all"
+              className="bg-slate-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl focus:ring-4 focus:ring-[#547792]/5 focus:border-[#547792] outline-none w-full md:w-48 transition-all font-semibold"
             >
               {Array.from({ length: 12 }, (_, i) => (
                 <option key={i + 1} value={i + 1}>
@@ -120,7 +120,7 @@ export default function AdminReport() {
               type="number"
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              className="bg-slate-50 border border-slate-200 text-slate-700 p-2 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none w-28 transition-all"
+              className="bg-slate-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl focus:ring-4 focus:ring-[#547792]/5 focus:border-[#547792] outline-none w-28 transition-all font-semibold"
             />
           </div>
 
@@ -128,7 +128,7 @@ export default function AdminReport() {
             <button
               onClick={fetchReport}
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl flex items-center gap-2 font-medium transition-all active:scale-95 disabled:opacity-50"
+              className="bg-[#213448] hover:bg-[#1a2a3a] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-slate-200"
             >
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
               Generate
@@ -137,7 +137,7 @@ export default function AdminReport() {
             <button
               onClick={exportPDF}
               disabled={!data}
-              className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-xl flex items-center gap-2 font-medium transition-all active:scale-95 disabled:opacity-50"
+              className="bg-[#547792] hover:bg-[#46637a] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-slate-100"
             >
               <FileText size={18} />
               PDF
@@ -151,45 +151,55 @@ export default function AdminReport() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kategori Laporan</th>
-                  <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Nilai / Jumlah</th>
+                  <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Kategori Laporan</th>
+                  <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Nilai / Jumlah</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 <AdminRow 
-                  icon={<Wallet size={18} className="text-emerald-600" />} 
+                  icon={<Wallet size={18} />} 
                   label="Total Pengeluaran Gaji" 
                   value={formatIDR(data.totalSalary)} 
                   isBold 
+                  colorClass="text-[#213448]"
+                  bgClass="bg-[#213448]/10"
                 />
                 <AdminRow 
-                  icon={<Users size={18} className="text-blue-500" />} 
+                  icon={<Users size={18} />} 
                   label="Total Karyawan Terdaftar" 
                   value={`${data.totalEmployees} Orang`} 
+                  colorClass="text-blue-600"
+                  bgClass="bg-blue-50"
                 />
                 <AdminRow 
-                  icon={<CheckCircle2 size={18} className="text-emerald-500" />} 
+                  icon={<CheckCircle2 size={18} />} 
                   label="Total Kehadiran Karyawan" 
                   value={`${data.totalAttendance} Hari`} 
+                  colorClass="text-emerald-600"
+                  bgClass="bg-emerald-50"
                 />
                 <AdminRow 
-                  icon={<Clock size={18} className="text-amber-500" />} 
+                  icon={<Clock size={18} />} 
                   label="Total Keterlambatan" 
                   value={`${data.totalLate} Kali`} 
+                  colorClass="text-amber-600"
+                  bgClass="bg-amber-50"
                 />
                 <AdminRow 
-                  icon={<UserX size={18} className="text-red-500" />} 
+                  icon={<UserX size={18} />} 
                   label="Total Absen (Tanpa Keterangan)" 
                   value={`${data.totalLeave} Kali`} 
+                  colorClass="text-rose-600"
+                  bgClass="bg-rose-50"
                 />
               </tbody>
             </table>
           ) : (
             <div className="p-16 text-center">
-              <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
-                <Database className="text-slate-300" size={28} />
+              <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                <Database className="text-slate-300" size={32} />
               </div>
-              <p className="text-slate-400 font-medium">Data belum dimuat. Silakan klik Generate.</p>
+              <p className="text-slate-400 font-bold">Data belum dimuat. Silakan klik tombol Generate.</p>
             </div>
           )}
         </div>
@@ -203,20 +213,22 @@ interface AdminRowProps {
   value: string;
   icon: React.ReactNode;
   isBold?: boolean;
+  colorClass: string;
+  bgClass: string;
 }
 
-function AdminRow({ label, value, icon, isBold }: AdminRowProps) {
+function AdminRow({ label, value, icon, isBold, colorClass, bgClass }: AdminRowProps) {
   return (
-    <tr className="group hover:bg-slate-50 transition-colors">
-      <td className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white border border-slate-100 rounded-lg group-hover:border-slate-200 transition-all shadow-sm">
+    <tr className="group hover:bg-slate-50/80 transition-colors">
+      <td className="p-5">
+        <div className="flex items-center gap-4">
+          <div className={`p-2.5 rounded-xl transition-all shadow-sm ${bgClass} ${colorClass}`}>
             {icon}
           </div>
-          <span className={`text-slate-700 ${isBold ? "font-bold" : "font-medium"}`}>{label}</span>
+          <span className={`text-slate-700 ${isBold ? "font-bold" : "font-semibold"}`}>{label}</span>
         </div>
       </td>
-      <td className={`p-4 text-right text-slate-800 ${isBold ? "font-bold text-lg" : "font-semibold"}`}>
+      <td className={`p-5 text-right ${isBold ? "font-extrabold text-xl text-[#213448]" : "font-bold text-slate-800"}`}>
         {value}
       </td>
     </tr>

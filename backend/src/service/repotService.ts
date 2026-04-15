@@ -1,21 +1,123 @@
 import prisma from "../utils/prisma";
 
-// Helper untuk menentukan rentang tanggal
+// Helper untuk menentukan rentang tanggal dalam satu bulan
 const getDateRange = (month: number, year: number) => {
-  const start = new Date(year, month - 1, 1);
+  const start = new Date(year, month - 1, 1, 0, 0, 0);
   const end = new Date(year, month, 0, 23, 59, 59);
   return { start, end };
 };
 
-// ====================== HR REPORT ======================
-export const getHRReportData = async (month: number, year: number) => {
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 0, 23, 59, 59);
+//
+// ======================
+// ADMIN REPORT
+// ======================
+export const getAdminReportData = async (
+  month: number,
+  year: number
+) => {
+  const { start, end } = getDateRange(month, year);
 
-  // Ambil semua karyawan
+  // Total Karyawan
+  const totalEmployees = await prisma.employee.count();
+
+  // Total Departemen & Posisi
+  const totalDepartments = await prisma.employee.groupBy({
+    by: ["departemen"],
+  });
+
+  const totalPositions = await prisma.employee.groupBy({
+    by: ["jabatan"],
+  });
+
+  // Total Pengeluaran Gaji pada bulan tersebut
+  const payroll = await prisma.payroll.aggregate({
+    _sum: {
+      total_salary: true,
+    },
+    where: {
+      periode_month: month,
+      periode_year: year,
+    },
+  });
+
+  // ======================
+  // ATTENDANCE
+  // ======================
+
+  // Kehadiran: PRESENT + LATE
+  const totalAttendance = await prisma.attendance.count({
+    where: {
+      date: {
+        gte: start,
+        lte: end,
+      },
+      attendance_status: {
+        in: ["PRESENT", "LATE"],
+      },
+    },
+  });
+
+  // Total Keterlambatan
+  const totalLate = await prisma.attendance.count({
+    where: {
+      date: {
+        gte: start,
+        lte: end,
+      },
+      attendance_status: "LATE",
+    },
+  });
+
+  // Total Absen Tanpa Keterangan
+  const totalLeave = await prisma.attendance.count({
+    where: {
+      date: {
+        gte: start,
+        lte: end,
+      },
+      attendance_status: "ABSENT",
+    },
+  });
+
+  // Distribusi karyawan per departemen (untuk chart jika diperlukan)
+  const departmentDistribution = await prisma.employee.groupBy({
+    by: ["departemen"],
+    _count: {
+      id_employee: true,
+    },
+  });
+
+  return {
+    summary: {
+      totalEmployees,
+      totalDepartments: totalDepartments.length,
+      totalPositions: totalPositions.length,
+      totalSalary: payroll._sum.total_salary || 0,
+      totalAttendance,
+      totalLate,
+      totalLeave,
+    },
+    charts: {
+      departmentDistribution: departmentDistribution.map((d) => ({
+        name: d.departemen,
+        total: d._count.id_employee,
+      })),
+    },
+  };
+};
+
+//
+// ======================
+// HR REPORT
+// ======================
+export const getHRReportData = async (
+  month: number,
+  year: number
+) => {
+  const { start, end } = getDateRange(month, year);
+
   const employees = await prisma.employee.findMany();
 
-  // Attendance
   const attendances = await prisma.attendance.findMany({
     where: {
       date: {
@@ -25,7 +127,6 @@ export const getHRReportData = async (month: number, year: number) => {
     },
   });
 
-  // Leave (CUTI) dari tabel leave
   const leaves = await prisma.leave.findMany({
     where: {
       leave_status: "APPROVED",
@@ -34,7 +135,6 @@ export const getHRReportData = async (month: number, year: number) => {
     },
   });
 
-  // Overtime
   const overtimes = await prisma.overtime.findMany({
     where: {
       overtime_status: "APPROVED",
@@ -47,7 +147,7 @@ export const getHRReportData = async (month: number, year: number) => {
 
   const reportMap: Record<number, any> = {};
 
-  // Inisialisasi data
+  // Inisialisasi data karyawan
   employees.forEach((emp) => {
     reportMap[emp.id_employee] = {
       name: emp.full_name,
@@ -60,7 +160,7 @@ export const getHRReportData = async (month: number, year: number) => {
     };
   });
 
-  // Hitung attendance
+  // Hitung kehadiran dan keterlambatan
   attendances.forEach((a) => {
     const row = reportMap[a.id_employee];
     if (!row) return;
@@ -73,15 +173,23 @@ export const getHRReportData = async (month: number, year: number) => {
       row.attendance++;
       row.late++;
     }
+
+    if (a.attendance_status === "ABSENT") {
+      row.leave++;
+    }
   });
 
-  // Hitung cuti dari tabel leave
+  // Hitung cuti berdasarkan rentang tanggal
   leaves.forEach((l) => {
     const row = reportMap[l.id_employee];
     if (!row) return;
 
-    const startDate = new Date(l.start_date);
-    const endDate = new Date(l.end_date);
+    const startDate = new Date(
+      Math.max(new Date(l.start_date).getTime(), start.getTime())
+    );
+    const endDate = new Date(
+      Math.min(new Date(l.end_date).getTime(), end.getTime())
+    );
 
     const days =
       Math.ceil(
@@ -89,14 +197,15 @@ export const getHRReportData = async (month: number, year: number) => {
           (1000 * 60 * 60 * 24)
       ) + 1;
 
-    row.leave += days;
+    if (days > 0) {
+      row.leave += days;
+    }
   });
 
-  // Hitung lembur
+  // Hitung lembur dalam jam
   overtimes.forEach((o) => {
     const row = reportMap[o.id_employee];
     if (!row) return;
-
     row.overtime += Math.round(o.total_minutes / 60);
   });
 
@@ -104,81 +213,25 @@ export const getHRReportData = async (month: number, year: number) => {
 
   const summary = {
     totalEmployees: table.length,
-    totalAttendance: table.reduce((a, t) => a + t.attendance, 0),
+    totalAttendance: table.reduce(
+      (a, t) => a + t.attendance,
+      0
+    ),
     totalLate: table.reduce((a, t) => a + t.late, 0),
     totalLeave: table.reduce((a, t) => a + t.leave, 0),
-    totalOvertime: table.reduce((a, t) => a + t.overtime, 0),
+    totalOvertime: table.reduce(
+      (a, t) => a + t.overtime,
+      0
+    ),
   };
 
   return { summary, table };
 };
 
-// ====================== ADMIN REPORT ======================
-// ====================== ADMIN REPORT ======================
-export const getAdminReportData = async (
-  month: number,
-  year: number
-) => {
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 0, 23, 59, 59);
-
-  const totalEmployee = await prisma.employee.count();
-
-  // Payroll
-  const payroll = await prisma.payroll.aggregate({
-    _sum: {
-      total_salary: true,
-    },
-    where: {
-      periode_month: month,
-      periode_year: year,
-    },
-  });
-
-  // Attendance
-  const attendances = await prisma.attendance.findMany({
-    where: {
-      date: {
-        gte: start,
-        lte: end,
-      },
-    },
-  });
-
-  const hadir = attendances.filter(
-    (a) => a.attendance_status === "PRESENT"
-  ).length;
-
-  const telat = attendances.filter(
-    (a) => a.attendance_status === "LATE"
-  ).length;
-
-  const absen = attendances.filter(
-    (a) => a.attendance_status === "ABSENT"
-  ).length;
-
-  const leaves = await prisma.leave.count({
-    where: {
-      leave_status: "APPROVED",
-      start_date: { lte: end },
-      end_date: { gte: start },
-    },
-  });
-
-  return {
-    summary: {
-      totalEmployees: totalEmployee,
-      totalSalary: payroll._sum.total_salary || 0,
-      totalAttendance: hadir,
-      totalLate: telat,
-      totalAbsent: absen,
-      totalLeave: leaves,
-      totalOvertime: 0,
-    },
-  };
-};
-
-// ====================== FINANCE REPORT ======================
+//
+// ======================
+// FINANCE REPORT
+// ======================
 export const getFinanceReportData = async (
   month: number,
   year: number
@@ -205,9 +258,18 @@ export const getFinanceReportData = async (
 
   const summary = {
     totalEmployee: table.length,
-    totalPayroll: table.reduce((a, t) => a + t.totalSalary, 0),
-    totalOvertime: table.reduce((a, t) => a + t.overtime, 0),
-    totalDeduction: table.reduce((a, t) => a + t.deduction, 0),
+    totalPayroll: table.reduce(
+      (a, t) => a + t.totalSalary,
+      0
+    ),
+    totalOvertime: table.reduce(
+      (a, t) => a + t.overtime,
+      0
+    ),
+    totalDeduction: table.reduce(
+      (a, t) => a + t.deduction,
+      0
+    ),
   };
 
   return { table, summary };

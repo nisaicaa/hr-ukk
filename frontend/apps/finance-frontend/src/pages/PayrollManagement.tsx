@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../../../services/api";
 import { showSuccess, showToast, showConfirm } from "../../../../services/helper/swal";
-import { DollarSign, FileText, Plus, Trash2, RefreshCw } from "lucide-react";
+import { DollarSign, FileText, Plus, Trash2, RefreshCw, Loader2 } from "lucide-react";
 
 const PayrollManagement = () => {
   const [data, setData] = useState<any[]>([]);
@@ -19,18 +19,15 @@ const PayrollManagement = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Fetching /payroll...");
       const res = await apiClient.get("/payroll");
-      console.log("✅ PAYROLL:", res.data);
       setData(res.data.data || []);
     } catch (error: any) {
-      console.error("❌ ERROR:", error.response?.status, error.response?.data);
       if (error.response?.status === 403) {
-        showToast("❌ Login sebagai FINANCE dulu!", "error");
+        showToast("❌ Akses Ditolak! Masuk sebagai FINANCE.", "error");
       } else if (error.response?.status === 404) {
-        showToast("❌ Route payroll belum ada di backend", "error");
+        showToast("❌ Endpoint payroll tidak ditemukan di server.", "error");
       } else {
-        showToast("Gagal load payroll", "error");
+        showToast("Gagal memuat data payroll.", "error");
       }
     } finally {
       setLoading(false);
@@ -40,391 +37,243 @@ const PayrollManagement = () => {
   const handleGeneratePayroll = async (e: React.FormEvent) => {
     e.preventDefault();
     const isConfirm = await showConfirm(
-      "Generate Payroll?",
-      `Yakin ingin generate payroll untuk ${form.periode_month}/${form.periode_year}?`
+      "Buat Payroll?",
+      `Anda akan memproses payroll untuk periode ${form.periode_month}/${form.periode_year}. Lanjutkan?`
     );
 
     if (isConfirm) {
       try {
-        console.log("🚀 POST /payroll/generate...");
         const res = await apiClient.post("/payroll/generate", form);
-        showSuccess("Berhasil!", res.data.message || "Payroll berhasil di-generate");
+        showSuccess("Berhasil!", res.data.message || "Payroll berhasil dibuat");
         fetchData();
       } catch (error: any) {
-        console.error("❌ GENERATE ERROR:", error.response?.data);
-        showToast(error.response?.data?.message || "Gagal generate payroll", "error");
+        showToast(error.response?.data?.message || "Gagal membuat payroll", "error");
       }
     }
   };
 
   const handleGeneratePayslip = async (id_payroll: number) => {
     try {
-      console.log("🚀 POST /payroll/payslip/", id_payroll);
       await apiClient.post(`/payroll/payslip/${id_payroll}`);
-      showSuccess("Berhasil", "Payslip berhasil dibuat");
+      showSuccess("Berhasil", "Slip gaji berhasil diterbitkan");
       fetchData();
     } catch (error: any) {
-      console.error("❌ PAYSILP ERROR:", error.response?.data);
-      showToast(error.response?.data?.message || "Gagal membuat payslip", "error");
+      showToast(error.response?.data?.message || "Gagal menerbitkan slip gaji", "error");
     }
   };
 
-  // ✅ DELETE FUNCTION
   const handleDeletePayroll = async (id_payroll: number, periode_month: number, periode_year: number) => {
     const isConfirm = await showConfirm(
-      "Hapus Payroll?",
-      `Yakin ingin HAPUS payroll ${periode_month}/${periode_year}? Data payslip juga akan terhapus. Bisa generate ulang setelah ini.`
+      "Hapus Data Payroll?",
+      `Yakin ingin menghapus data payroll ${periode_month}/${periode_year}? Seluruh slip gaji terkait juga akan terhapus.`
     );
 
     if (isConfirm) {
       try {
         setDeleting(true);
         await apiClient.delete(`/payroll/${id_payroll}`);
-        showSuccess("Berhasil Dihapus!", `Payroll ${periode_month}/${periode_year} berhasil dihapus`);
+        showSuccess("Berhasil Dihapus!", `Data periode ${periode_month}/${periode_year} telah dibersihkan.`);
         fetchData();
       } catch (error: any) {
-        console.error("❌ DELETE ERROR:", error.response?.data);
-        showToast(error.response?.data?.message || "Gagal hapus payroll", "error");
+        showToast(error.response?.data?.message || "Gagal menghapus data", "error");
       } finally {
         setDeleting(false);
       }
     }
   };
 
-  // ✅ REGENERATE FUNCTION
   const handleRegeneratePayroll = async (periode_month: number, periode_year: number) => {
+    const isConfirm = await showConfirm(
+        "Proses Ulang?",
+        `Ingin memperbarui data payroll periode ${periode_month}/${periode_year}?`
+      );
+    if (!isConfirm) return;
+
     try {
-      console.log("🔄 REGENERATE payroll...");
       const res = await apiClient.post("/payroll/generate", { periode_month, periode_year });
-      showSuccess("Berhasil Regenerate!", res.data.message || "Payroll berhasil di-generate ulang");
+      showSuccess("Berhasil Diperbarui!", res.data.message || "Data payroll telah disinkronkan ulang.");
       fetchData();
     } catch (error: any) {
-      console.error("❌ REGENERATE ERROR:", error.response?.data);
-      showToast(error.response?.data?.message || "Gagal regenerate payroll", "error");
+      showToast(error.response?.data?.message || "Gagal memproses ulang", "error");
     }
   };
 
   return (
-    <div style={{ 
-      padding: '32px', 
+    <div className="payroll-container" style={{ 
+      padding: 'clamp(16px, 5vw, 32px)', 
       minHeight: '100vh', 
       backgroundColor: '#f8fafc',
-      animation: 'fadeIn 0.5s ease-in'
     }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        
         {/* HEADER & FORM GENERATE */}
-        <div style={{
+        <div className="header-card" style={{
           background: 'white',
-          padding: '32px',
-          borderRadius: '28px',
+          padding: '24px',
+          borderRadius: '24px',
           border: '1px solid #e2e8f0',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          marginBottom: '32px',
-          display: 'grid',
-          gridTemplateColumns: '1fr 2fr',
-          gap: '24px',
-          alignItems: 'center'
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+          marginBottom: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px'
         }}>
-          <div>
-            <h2 style={{
-              fontSize: '32px',
-              fontWeight: '900',
-              color: '#1e293b',
-              margin: 0,
-              lineHeight: '1.2'
-            }}>
-              Payroll Management
-            </h2>
-            <p style={{
-              color: '#64748b',
-              fontSize: '16px',
-              margin: '8px 0 0 0',
-              fontWeight: '500'
-            }}>
-              Kelola dan generate gaji karyawan. Total: {data.length} data
-            </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+                <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#213448', margin: 0 }}>Manajemen Gaji</h2>
+                <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', fontWeight: '500' }}>
+                    Kelola administrasi gaji. Total: <b className="text-[#547792]">{data.length}</b> entri
+                </p>
+            </div>
+            <button 
+                onClick={() => handleRegeneratePayroll(form.periode_month, form.periode_year)}
+                style={{
+                    padding: '10px 18px',
+                    background: '#94B4C11A',
+                    color: '#547792',
+                    border: '1px solid #94B4C14D',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s'
+                }}
+            >
+                <RefreshCw size={16} />
+                Sinkronkan Periode Ini
+            </button>
           </div>
 
           <form onSubmit={handleGeneratePayroll} style={{
             display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
+            flexWrap: 'wrap',
+            gap: '12px',
             background: '#f1f5f9',
-            padding: '20px',
-            borderRadius: '20px',
-            border: '1px solid #e2e8f0'
+            padding: '16px',
+            borderRadius: '16px',
           }}>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <input 
-                type="number" 
-                min="1" 
-                max="12" 
-                value={form.periode_month}
-                onChange={e => setForm({...form, periode_month: parseInt(e.target.value)})}
-                style={{
-                  flex: 1,
-                  minWidth: '120px',
-                  padding: '12px 16px',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: '500'
-                }}
-                placeholder="Bulan"
-                required
-              />
-              <input 
-                type="number" 
-                min="2000" 
-                max="2030"
-                value={form.periode_year}
-                onChange={e => setForm({...form, periode_year: parseInt(e.target.value)})}
-                style={{
-                  flex: 1,
-                  minWidth: '120px',
-                  padding: '12px 16px',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: '500'
-                }}
-                placeholder="Tahun"
-                required
-              />
-            </div>
+            <input 
+              type="number" 
+              value={form.periode_month}
+              min={1} max={12}
+              onChange={e => setForm({...form, periode_month: parseInt(e.target.value)})}
+              style={{ flex: '1 1 120px', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }}
+              placeholder="Bulan (1-12)"
+              required
+            />
+            <input 
+              type="number" 
+              value={form.periode_year}
+              onChange={e => setForm({...form, periode_year: parseInt(e.target.value)})}
+              style={{ flex: '1 1 120px', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }}
+              placeholder="Tahun"
+              required
+            />
             <button 
               type="submit" 
               style={{
-                padding: '14px 24px',
-                background: '#1e293b',
+                flex: '2 1 200px',
+                padding: '12px 24px',
+                background: '#213448',
                 color: 'white',
                 border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
+                borderRadius: '10px',
                 fontWeight: '700',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                justifyContent: 'center',
-                transition: 'all 0.2s'
+                justifyContent: 'center'
               }}
-              onMouseOver={(e: any) => e.target.style.background = '#334155'}
-              onMouseOut={(e: any) => e.target.style.background = '#1e293b'}
             >
-              <Plus style={{ width: '20px', height: '20px' }} />
-              Generate Payroll
+              <Plus size={18} />
+              Generate Payroll Baru
             </button>
           </form>
         </div>
 
-        {/* TABLE */}
+        {/* TABLE AREA */}
         <div style={{
           background: 'white',
-          borderRadius: '28px',
+          borderRadius: '24px',
           border: '1px solid #e2e8f0',
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
           overflow: 'hidden'
         }}>
           {loading ? (
-            <div style={{
-              textAlign: 'center' as const,
-              padding: '80px',
-              color: '#64748b'
-            }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                border: '4px solid #e2e8f0',
-                borderTop: '4px solid #10b981',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto 24px'
-              }}></div>
-              <p style={{ fontSize: '16px', margin: 0 }}>Memuat data payroll...</p>
+            <div style={{ textAlign: 'center', padding: '60px' }}>
+              <Loader2 className="animate-spin" style={{ margin: '0 auto', color: '#547792' }} size={40} />
+              <p style={{ color: '#64748b', marginTop: '16px', fontWeight: '600' }}>Sedang memproses data...</p>
             </div>
           ) : data.length === 0 ? (
-            <div style={{
-              textAlign: 'center' as const,
-              padding: '100px 20px',
-              color: '#64748b'
-            }}>
-              <DollarSign style={{ 
-                width: '72px', 
-                height: '72px', 
-                margin: '0 auto 24px', 
-                opacity: 0.5 
-              }} />
-              <h3 style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                margin: '0 0 12px 0',
-                color: '#64748b'
-              }}>
-                Belum ada data payroll
-              </h3>
-              <p style={{ fontSize: '16px', margin: 0 }}>
-                Generate payroll terlebih dahulu untuk melihat data
-              </p>
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#94a3b8' }}>
+              <DollarSign style={{ width: '64px', height: '64px', margin: '0 auto 16px', opacity: 0.3 }} />
+              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#213448' }}>Belum Ada Data</h3>
+              <p>Daftar gaji akan muncul di sini setelah Anda melakukan generate.</p>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
-                    <th style={{
-                      padding: '20px 16px',
-                      textAlign: 'left' as const,
-                      fontSize: '12px',
-                      fontWeight: '800' as const,
-                      color: '#64748b',
-                      textTransform: 'uppercase' as const,
-                      letterSpacing: '0.05em',
-                      borderBottom: '2px solid #e2e8f0'
-                    }}>Karyawan</th>
-                    <th style={{
-                      padding: '20px 16px',
-                      textAlign: 'left' as const,
-                      fontSize: '12px',
-                      fontWeight: '800' as const,
-                      color: '#64748b',
-                      textTransform: 'uppercase' as const,
-                      letterSpacing: '0.05em',
-                      borderBottom: '2px solid #e2e8f0'
-                    }}>Periode</th>
-                    <th style={{
-                      padding: '20px 16px',
-                      textAlign: 'left' as const,
-                      fontSize: '12px',
-                      fontWeight: '800' as const,
-                      color: '#64748b',
-                      textTransform: 'uppercase' as const,
-                      letterSpacing: '0.05em',
-                      borderBottom: '2px solid #e2e8f0'
-                    }}>Kehadiran</th>
-                    <th style={{
-                      padding: '20px 16px',
-                      textAlign: 'left' as const,
-                      fontSize: '12px',
-                      fontWeight: '800' as const,
-                      color: '#64748b',
-                      textTransform: 'uppercase' as const,
-                      letterSpacing: '0.05em',
-                      borderBottom: '2px solid #e2e8f0'
-                    }}>Gaji Bersih</th>
-                    <th style={{
-                      padding: '20px 16px',
-                      textAlign: 'center' as const,
-                      fontSize: '12px',
-                      fontWeight: '800' as const,
-                      color: '#64748b',
-                      textTransform: 'uppercase' as const,
-                      letterSpacing: '0.05em',
-                      borderBottom: '2px solid #e2e8f0'
-                    }}>Aksi</th>
+                    <th style={thStyle}>Karyawan</th>
+                    <th style={thStyle}>Periode</th>
+                    <th style={thStyle}>Presensi (H | C | L)</th>
+                    <th style={thStyle}>Gaji Bersih</th>
+                    <th style={{ ...thStyle, textAlign: 'center' }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.map((row) => (
-                    <tr key={row.id_payroll} style={{
-                      borderBottom: '1px solid #f1f5f9'
-                    }}>
-                      <td style={{ padding: '20px 16px' }}>
-                        <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '16px', marginBottom: '4px' }}>
-                          {row.employee?.full_name || 'N/A'}
-                        </div>
-                        <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
-                          {row.employee?.nik || '-'}
-                        </div>
+                    <tr key={row.id_payroll} className="table-row">
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: '700', color: '#213448' }}>{row.employee?.full_name || 'Tidak Diketahui'}</div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>{row.employee?.nik || '-'}</div>
                       </td>
-                      <td style={{ padding: '20px 16px', fontWeight: '700', color: '#475569', fontSize: '16px' }}>
-                        {row.periode_month}/{row.periode_year}
+                      <td style={{ ...tdStyle, fontWeight: '600' }}>
+                        {row.periode_month} / {row.periode_year}
                       </td>
-                      <td style={{ padding: '20px 16px', color: '#475569', fontSize: '14px' }}>
-                        H: {row.total_attendance || 0} | C: {row.total_leave || 0} | L: {row.total_overtime || 0}
+                      <td style={tdStyle}>
+                        <span title="Hadir" style={{ color: '#059669', fontWeight: '700' }}>{row.total_attendance}</span>
+                        <span style={{ color: '#e2e8f0', margin: '0 8px' }}>|</span>
+                        <span title="Cuti" style={{ color: '#547792', fontWeight: '700' }}>{row.total_leave}</span>
+                        <span style={{ color: '#e2e8f0', margin: '0 8px' }}>|</span>
+                        <span title="Lembur" style={{ color: '#f59e0b', fontWeight: '700' }}>{row.total_overtime}</span>
                       </td>
-                      <td style={{ padding: '20px 16px', fontWeight: '900', color: '#059669', fontSize: '18px' }}>
+                      <td style={{ ...tdStyle, fontWeight: '800', color: '#059669', fontSize: '15px' }}>
                         Rp {Number(row.total_salary || 0).toLocaleString('id-ID')}
                       </td>
-                      <td style={{ padding: '20px 16px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-                          {/* Generate Payslip */}
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                           {row.payslips?.length === 0 ? (
                             <button 
                               onClick={() => handleGeneratePayslip(row.id_payroll)}
-                              style={{
-                                padding: '8px 16px',
-                                background: '#d1fae5',
-                                color: '#065f46',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontWeight: '600',
-                                fontSize: '13px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}
+                              title="Terbitkan Slip Gaji"
+                              style={{ ...iconBtnStyle, background: '#D1FAE5', color: '#065F46' }}
                             >
-                              <FileText style={{ width: '16px', height: '16px' }} />
-                              Payslip
+                              <FileText size={18} />
                             </button>
                           ) : (
-                            <span style={{
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              color: '#059669',
-                              background: '#d1fae5',
-                              padding: '6px 12px',
-                              borderRadius: '9999px'
-                            }}>
-                              Payslip ✓
-                            </span>
+                            <div title="Slip Gaji Sudah Terbit" style={{ ...iconBtnStyle, background: '#f1f5f9', color: '#059669', cursor: 'default' }}>
+                                <FileText size={18} />
+                            </div>
                           )}
-                          
-                          {/* DELETE & REGENERATE BUTTONS */}
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                            <button 
-                              onClick={() => handleDeletePayroll(row.id_payroll, row.periode_month, row.periode_year)}
-                              disabled={deleting}
-                              style={{
-                                padding: '6px 10px',
-                                background: deleting ? '#f3f4f6' : '#fee2e2',
-                                color: deleting ? '#9ca3af' : '#dc2626',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '11px',
-                                fontWeight: '600',
-                                cursor: deleting ? 'not-allowed' : 'pointer',
-                                opacity: deleting ? 0.6 : 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '2px'
-                              }}
-                            >
-                              <Trash2 style={{ width: '14px', height: '14px' }} />
-                              Hapus
-                            </button>
-                            <button 
-                              onClick={() => handleRegeneratePayroll(row.periode_month, row.periode_year)}
-                              style={{
-                                padding: '6px 10px',
-                                background: '#dbeafe',
-                                color: '#1e40af',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '11px',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '2px'
-                              }}
-                            >
-                              <RefreshCw style={{ width: '14px', height: '14px' }} />
-                              Ulangi
-                            </button>
-                          </div>
+
+                          <button 
+                            onClick={() => handleDeletePayroll(row.id_payroll, row.periode_month, row.periode_year)}
+                            disabled={deleting}
+                            title="Hapus Log"
+                            style={{ 
+                                ...iconBtnStyle, 
+                                background: deleting ? '#f1f5f9' : '#FEE2E2', 
+                                color: deleting ? '#cbd5e1' : '#B91C1C' 
+                            }}
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -436,18 +285,49 @@ const PayrollManagement = () => {
         </div>
 
         <style>{`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+          .payroll-container { animation: fadeIn 0.4s ease-out; }
+          .table-row { border-bottom: 1px solid #f1f5f9; transition: all 0.2s; }
+          .table-row:hover { background-color: #f8fafc; }
+          @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+          
+          @media (max-width: 768px) {
+            .header-card { padding: 16px; }
+            h2 { font-size: 22px !important; }
           }
         `}</style>
       </div>
     </div>
   );
+};
+
+// Style Helpers
+const thStyle: React.CSSProperties = {
+  padding: '16px',
+  textAlign: 'left',
+  fontSize: '11px',
+  fontWeight: '800',
+  color: '#94a3b8',
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  borderBottom: '2px solid #f1f5f9'
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: '16px',
+  fontSize: '14px',
+  color: '#334155'
+};
+
+const iconBtnStyle: React.CSSProperties = {
+  width: '38px',
+  height: '38px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: 'none',
+  borderRadius: '10px',
+  cursor: 'pointer',
+  transition: 'transform 0.1s, opacity 0.2s',
 };
 
 export default PayrollManagement;

@@ -1,380 +1,346 @@
 import { useEffect, useState } from "react";
-// ✅ IMPORT useNavigate
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../../../services/api";
 import { showToast } from "../../../../services/helper/swal";
-// ✅ IMPORT ArrowLeft
-import { FileText, Download, CalendarDays, ArrowLeft } from "lucide-react";
-// ✅ IMPORT JSPDF
+import { Download, ChevronLeft, Loader2, Landmark, Calendar } from "lucide-react";
 import { jsPDF } from "jspdf";
 
 const Payslip = () => {
-  const navigate = useNavigate(); // ✅ INITIALIZE NAVIGATE
+  const navigate = useNavigate();
   const [data, setData] = useState<any[]>([]);
+  const [employee, setEmployee] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, []);
 
+  // =======================
+  // FETCH DATA PAYROLL
+  // =======================
   const fetchData = async () => {
     try {
       setLoading(true);
       const res = await apiClient.get("/payroll/my-payroll");
       setData(res.data.data || []);
+
+      // Ambil data employee dari payroll pertama
+      if (res.data.data && res.data.data.length > 0) {
+        setEmployee(res.data.data[0].employee);
+      }
     } catch (error: any) {
-      showToast("Gagal load slip gaji", "error");
+      showToast("Gagal memuat slip gaji", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ LOGIKA PERHITUNGAN
+  // =======================
+  // PERHITUNGAN POTONGAN
+  // =======================
   const calculateDeductions = (payroll: any) => {
     const basicSalary = Number(payroll.total_salary) || 0;
-    const attendanceRate = (payroll.total_attendance || 0) / 22; // 22 hari kerja
-    
+    const attendanceRate = (payroll.total_attendance || 0) / 22;
+
     const deductions = {
-      attendanceCut: attendanceRate < 0.8 ? basicSalary * 0.05 : 0, // 5% kalau <80%
-      pph21: basicSalary > 5000000 ? basicSalary * 0.05 : 0, // Mock PPh21 5%
-      bpjsKesehatan: basicSalary * 0.01, // 1% BPJS Kesehatan
-      bpjsKetenagakerjaan: basicSalary * 0.02, // 2% BPJS Ketenagakerjaan
+      attendanceCut: attendanceRate < 0.8 ? basicSalary * 0.05 : 0,
+      pph21: basicSalary > 5000000 ? basicSalary * 0.05 : 0,
+      bpjsKesehatan: basicSalary * 0.01,
+      bpjsKetenagakerjaan: basicSalary * 0.02,
       total: 0
     };
-    
-    deductions.total = deductions.attendanceCut + deductions.pph21 + 
-                      deductions.bpjsKesehatan + deductions.bpjsKetenagakerjaan;
-    
+
+    deductions.total =
+      deductions.attendanceCut +
+      deductions.pph21 +
+      deductions.bpjsKesehatan +
+      deductions.bpjsKetenagakerjaan;
+
     return deductions;
   };
 
-  // ✅ FUNGSI DOWNLOAD PDF MENGGUNAKAN JSPDF
-  const handleDownloadPDF = async (id_payroll: number) => {
-    const payslipData = data.find(p => p.id_payroll === id_payroll);
+  // =======================
+  // DOWNLOAD PDF SLIP GAJI
+  // =======================
+  const handleDownloadPDF = (id_payroll: number) => {
+    const payslipData = data.find((p) => p.id_payroll === id_payroll);
     if (!payslipData?.payslips?.length) {
-      showToast("Payslip belum siap", "error");
+      showToast("Slip gaji belum siap", "error");
       return;
     }
 
     const deductions = calculateDeductions(payslipData);
-    
-    // Perhitungan nilai berdasarkan logika Anda
     const overtimeBonus = (payslipData.total_overtime / 60) * 50000;
-    const subtotal = Number(payslipData.total_salary || 0) + overtimeBonus;
+    const subtotal =
+      Number(payslipData.total_salary || 0) + overtimeBonus;
     const netSalary = subtotal - deductions.total;
 
-    // Inisialisasi jsPDF
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4"
-    });
-
-    // --- KONTEN PDF ---
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const margin = 15;
     let y = margin;
 
-    // Header
+    // ===== HEADER =====
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("SLIP GAJI RESMI", 105, y, { align: "center" });
+    doc.text("SLIP GAJI", 105, y, { align: "center" });
     y += 7;
+
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text("HR-UKK SYSTEM | PT. UKK BANDUNG", 105, y, { align: "center" });
-    y += 10;
-    doc.line(margin, y, 200 - margin, y); // Garis pembatas
+    doc.text("HumaNest HRIS", 105, y, { align: "center" });
     y += 10;
 
-    // Informasi Karyawan
+    doc.line(margin, y, 200 - margin, y);
+    y += 10;
+
+    // ===== INFORMASI KARYAWAN =====
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text("INFORMASI KARYAWAN", margin, y);
     y += 6;
-    doc.setFont("helvetica", "normal");
-    doc.text(`Periode: ${payslipData.periode_month.toString().padStart(2, '0')}/${payslipData.periode_year}`, margin, y);
-    y += 5;
-    doc.text(`Nama   : ${payslipData.employee?.full_name || 'N/A'}`, margin, y);
-    y += 5;
-    doc.text(`NIK    : ${payslipData.employee?.nik || 'N/A'}`, margin, y);
-    y += 5;
-    doc.text(`Jabatan: ${payslipData.employee?.jabatan || 'Staff'}`, margin, y);
-    y += 12;
 
-    // Rincian
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      `Periode: ${new Intl.DateTimeFormat("id-ID", {
+        month: "long",
+        year: "numeric"
+      }).format(
+        new Date(
+          payslipData.periode_year,
+          payslipData.periode_month - 1
+        )
+      )}`,
+      margin,
+      y
+    );
+    y += 5;
+
+    doc.text(`Nama : ${payslipData.employee?.full_name || "-"}`, margin, y);
+    y += 5;
+    doc.text(`NIK  : ${payslipData.employee?.nik || "-"}`, margin, y);
+    y += 5;
+
+    if (payslipData.employee?.hire_date) {
+      doc.text(
+        `Tanggal Bergabung : ${new Date(
+          payslipData.employee.hire_date
+        ).toLocaleDateString("id-ID")}`,
+        margin,
+        y
+      );
+      y += 8;
+    }
+
+    // ===== RINCIAN PENGGAJIAN =====
     doc.setFont("helvetica", "bold");
     doc.text("RINCIAN PENGGAJIAN", margin, y);
     y += 8;
 
-    // Table Header
-    doc.setFontSize(9);
-    doc.setFillColor(245, 245, 245);
-    doc.rect(margin, y - 5, 180, 7, 'F');
-    doc.text("Deskripsi", margin + 2, y);
-    doc.text("Nominal", 170, y, { align: "right" });
-    y += 8;
+    const addRow = (label: string, value: number, isNegative = false) => {
+      doc.setFont("helvetica", "normal");
+      doc.text(label, margin + 2, y);
+      doc.text(
+        `${isNegative ? "- " : ""}Rp ${value.toLocaleString("id-ID")}`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 6;
+    };
 
-    // Table Content
-    doc.setFont("helvetica", "normal");
-    
-    // Gaji Pokok & Lembur
-    doc.text("Gaji Pokok", margin + 2, y);
-    doc.text(`Rp ${Number(payslipData.total_salary || 0).toLocaleString('id-ID')}`, 170, y, { align: "right" });
-    y += 5;
-    doc.text(`Overtime Bonus (${payslipData.total_overtime}m)`, margin + 2, y);
-    doc.text(`Rp ${overtimeBonus.toLocaleString('id-ID')}`, 170, y, { align: "right" });
-    y += 5;
-    
-    doc.line(margin, y, 200 - margin, y);
-    y += 6;
-    
-    // Subtotal
-    doc.setFont("helvetica", "bold");
-    doc.text("SUBTOTAL", margin + 2, y);
-    doc.text(`Rp ${subtotal.toLocaleString('id-ID')}`, 170, y, { align: "right" });
-    y += 8;
-    
-    doc.line(margin, y, 200 - margin, y);
-    y += 6;
+    addRow("Gaji Pokok", Number(payslipData.total_salary));
+    addRow("Bonus Lembur", overtimeBonus);
+    addRow("Potongan Absensi", deductions.attendanceCut, true);
+    addRow("PPh 21", deductions.pph21, true);
+    addRow("BPJS Kesehatan", deductions.bpjsKesehatan, true);
+    addRow("BPJS Ketenagakerjaan", deductions.bpjsKetenagakerjaan, true);
 
-    // Potongan
-    doc.setFont("helvetica", "bold");
-    doc.text("POTONGAN", margin + 2, y);
-    y += 6;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    
-    doc.text("Potongan Kehadiran (<80%)", margin + 5, y);
-    doc.text(`-Rp ${deductions.attendanceCut.toLocaleString('id-ID')}`, 170, y, { align: "right" });
-    y += 4;
-    doc.text("PPh 21", margin + 5, y);
-    doc.text(`-Rp ${deductions.pph21.toLocaleString('id-ID')}`, 170, y, { align: "right" });
-    y += 4;
-    doc.text("BPJS Kesehatan (1%)", margin + 5, y);
-    doc.text(`-Rp ${deductions.bpjsKesehatan.toLocaleString('id-ID')}`, 170, y, { align: "right" });
-    y += 4;
-    doc.text("BPJS Ketenagakerjaan (2%)", margin + 5, y);
-    doc.text(`-Rp ${deductions.bpjsKetenagakerjaan.toLocaleString('id-ID')}`, 170, y, { align: "right" });
-    y += 6;
-    
     doc.line(margin, y, 200 - margin, y);
     y += 8;
 
-    // Total Bersih
-    doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text("TOTAL BERSIH DITERIMA", margin + 2, y);
-    doc.text(`Rp ${netSalary.toLocaleString('id-ID')}`, 170, y, { align: "right" });
-    
+    doc.text("TAKE HOME PAY", margin + 2, y);
+    doc.text(`Rp ${netSalary.toLocaleString("id-ID")}`, 170, y, {
+      align: "right"
+    });
+
+    // ===== FOOTER =====
     y += 15;
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
-    doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, margin, y);
+    doc.text(
+      "Dokumen ini dihasilkan secara otomatis oleh sistem HumaNest HRIS.",
+      margin,
+      y
+    );
 
-    // Save PDF
-    doc.save(`SLIP_GAJI_${payslipData.periode_month}_${payslipData.periode_year}_${payslipData.employee?.nik || 'EMP'}.pdf`);
-    
-    showToast("✅ PDF Slip Gaji berhasil di-download!", "success");
+    doc.save(
+      `SLIP_GAJI_${payslipData.periode_month}_${payslipData.periode_year}.pdf`
+    );
+    showToast("Slip Gaji berhasil diunduh", "success");
   };
 
   return (
-    <div style={{ 
-      padding: '32px', 
-      minHeight: '100vh', 
-      backgroundColor: '#f8fafc',
-      animation: 'fadeIn 0.5s ease-in-out'
-    }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="min-h-screen bg-slate-50/50 pb-20 animate-in fade-in duration-700">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
         {/* HEADER */}
-        <div style={{
-          background: 'white',
-          padding: '32px',
-          borderRadius: '28px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 4px 6px -1px rgba(0, 0,0, 0.1)',
-          marginBottom: '32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {/* ✅ TOMBOL KEMBALI */}
-            <button 
-              onClick={() => navigate(-1)} 
-              style={{
-                padding: '12px',
-                background: '#f1f5f9',
-                border: 'none',
-                borderRadius: '16px',
-                color: '#64748b',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center'
-              }}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-8 mb-8">
+          <div className="flex items-center gap-5">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-4 bg-white rounded-[22px] border border-slate-100 shadow-sm text-[#213448] hover:bg-[#213448] hover:text-white transition-all active:scale-90"
             >
-              <ArrowLeft size={24} />
+              <ChevronLeft size={20} />
             </button>
             <div>
-              <h2 style={{
-                fontSize: '32px',
-                fontWeight: '900',
-                color: '#1e293b',
-                margin: 0
-              }}>
+              <h1 className="text-2xl sm:text-3xl font-black text-[#213448] tracking-tighter">
                 Slip Gaji Saya
-              </h2>
-              <p style={{
-                color: '#64748b',
-                fontSize: '16px',
-                margin: '8px 0 0 0'
-              }}>
-                Total: <strong>{data.length}</strong> slip tersedia
+              </h1>
+              <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">
+                Riwayat payroll sejak awal bekerja
               </p>
+              {employee?.hire_date && (
+                <p className="text-xs text-slate-400 mt-1">
+                  Mulai bekerja sejak{" "}
+                  {new Date(employee.hire_date).toLocaleDateString("id-ID")}
+                </p>
+              )}
             </div>
           </div>
-          <FileText style={{ width: '48px', height: '48px', color: '#10b981' }} />
-        </div>
 
-        {/* LOADING */}
-        {loading && (
-          <div style={{
-            background: 'white',
-            borderRadius: '28px',
-            padding: '80px 20px',
-            textAlign: 'center' as const,
-            border: '1px solid #e2e8f0'
-          }}>
-            <div style={{
-              width: '56px', height: '56px',
-              border: '4px solid #e2e8f0',
-              borderTop: '4px solid #10b981',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 24px'
-            }}></div>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>Memuat...</p>
+          <div className="hidden sm:flex p-4 bg-emerald-50 text-emerald-600 rounded-[22px] border border-emerald-100 items-center gap-3">
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase opacity-60">
+                Status Akun
+              </p>
+              <p className="text-sm font-black italic">
+                Verified Employee
+              </p>
+            </div>
+            <Landmark size={24} />
           </div>
-        )}
+        </header>
 
-        {/* EMPTY */}
-        {!loading && !data.length && (
-          <div style={{
-            background: 'white',
-            borderRadius: '28px',
-            padding: '100px 40px',
-            textAlign: 'center' as const,
-            border: '1px solid #e2e8f0'
-          }}>
-            <FileText style={{ width: '72px', height: '72px', opacity: 0.5, color: '#94a3b8', margin: '0 auto 24px' }} />
-            <h3 style={{ fontSize: '24px', color: '#64748b', margin: '0 0 12px' }}>
-              Belum ada slip gaji
-            </h3>
-            <p style={{ fontSize: '16px', color: '#94a3b8' }}>
-              Tunggu finance generate payroll & payslip
+        {/* CONTENT */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[40px] border border-slate-100 shadow-sm">
+            <Loader2 className="w-10 h-10 text-[#213448] animate-spin mb-4" />
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">
+              Menarik Data Keuangan...
             </p>
           </div>
-        )}
-
-        {/* LIST */}
-        {!loading && data.length > 0 && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-            gap: '24px'
-          }}>
-            {data.map((row: any) => {
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {data.map((row) => {
               const deductions = calculateDeductions(row);
-              const netSalary = (row.total_salary || 0) + (row.total_overtime / 60 * 50000) - deductions.total;
-              
-              return (
-                <div key={row.id_payroll} style={{
-                  background: 'white',
-                  padding: '28px',
-                  borderRadius: '20px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                }}>
-                  {/* PERIODE */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                    <div>
-                      <p style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>
-                        Periode {row.periode_month}/{row.periode_year}
-                      </p>
-                      <p style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', margin: '4px 0 0 0' }}>
-                        Rp {netSalary.toLocaleString('id-ID')}
-                      </p>
-                    </div>
-                    <span style={{
-                      padding: '6px 12px',
-                      borderRadius: '20px',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      background: row.payslips?.length ? '#d1fae5' : '#f8fafc',
-                      color: row.payslips?.length ? '#065f46' : '#64748b'
-                    }}>
-                      {row.payslips?.length ? '✅ Siap Download' : '⏳ Menunggu'}
-                    </span>
-                  </div>
+              const overtimeBonus = (row.total_overtime / 60) * 50000;
+              const netSalary =
+                (Number(row.total_salary) || 0) +
+                overtimeBonus -
+                deductions.total;
+              const isReady = row.payslips?.length > 0;
 
-                  {/* RINCIAN */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', fontSize: '15px' }}>
-                      <span>Gaji Pokok</span>
-                      <span style={{ fontWeight: '700' }}>Rp {Number(row.total_salary).toLocaleString('id-ID')}</span>
+              return (
+                <div
+                  key={row.id_payroll}
+                  className="bg-white rounded-[35px] border border-slate-100 p-6 sm:p-8 shadow-sm hover:shadow-md transition-all group overflow-hidden relative"
+                >
+                  <Landmark
+                    className="absolute -right-4 -top-4 text-slate-50 group-hover:text-emerald-50/50 transition-colors"
+                    size={120}
+                  />
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="px-4 py-1.5 bg-slate-900 text-white rounded-xl text-[10px] font-black tracking-widest uppercase">
+                        {new Intl.DateTimeFormat("id-ID", {
+                          month: "long",
+                          year: "numeric"
+                        }).format(
+                          new Date(
+                            row.periode_year,
+                            row.periode_month - 1
+                          )
+                        )}
+                      </div>
+                      <span
+                        className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${
+                          isReady
+                            ? "text-emerald-500"
+                            : "text-amber-500"
+                        }`}
+                      >
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            isReady
+                              ? "bg-emerald-500 animate-pulse"
+                              : "bg-amber-500"
+                          }`}
+                        />
+                        {isReady ? "Tersedia" : "Proses"}
+                      </span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', color: '#ef4444' }}>
-                      <span>Potongan:</span>
-                      <div style={{ textAlign: 'right' as const }}>
-                        <div>Attendance {Math.round((deductions.attendanceCut/row.total_salary)*100)}%: -Rp {Number(deductions.attendanceCut).toLocaleString('id-ID')}</div>
-                        <div>PPh21: -Rp {Number(deductions.pph21).toLocaleString('id-ID')}</div>
-                        <div>BPJS Kes: -Rp {Number(deductions.bpjsKesehatan).toLocaleString('id-ID')}</div>
-                        <div>BPJS Ket: -Rp {Number(deductions.bpjsKetenagakerjaan).toLocaleString('id-ID')}</div>
+
+                    <div className="mb-8">
+                      <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">
+                        Total Diterima (THP)
+                      </p>
+                      <h2 className="text-3xl font-black text-[#213448] tracking-tighter">
+                        Rp {netSalary.toLocaleString("id-ID")}
+                      </h2>
+                    </div>
+
+                    <div className="space-y-3 mb-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                      <div className="flex justify-between text-xs font-bold">
+                        <span className="text-slate-400 uppercase">
+                          Gaji Pokok
+                        </span>
+                        <span className="text-[#213448]">
+                          Rp{" "}
+                          {Number(row.total_salary).toLocaleString(
+                            "id-ID"
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs font-bold">
+                        <span className="text-slate-400 uppercase">
+                          Bonus Lembur
+                        </span>
+                        <span className="text-emerald-600">
+                          + Rp {overtimeBonus.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs font-bold">
+                        <span className="text-slate-400 uppercase">
+                          Potongan
+                        </span>
+                        <span className="text-rose-500">
+                          - Rp{" "}
+                          {deductions.total.toLocaleString("id-ID")}
+                        </span>
                       </div>
                     </div>
-                  </div>
 
-                  {/* BUTTON */}
-                  {row.payslips?.length > 0 ? (
-                    <button 
-                      onClick={() => handleDownloadPDF(row.id_payroll)}
-                      style={{
-                        width: '100%',
-                        padding: '14px 20px',
-                        background: 'linear-gradient(135deg, #10b981, #059669)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '12px',
-                        fontSize: '16px',
-                        fontWeight: '700',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Download style={{ width: '18px', height: '18px', display: 'inline', marginRight: '8px' }} />
-                      Download PDF Resmi
-                    </button>
-                  ) : (
-                    <div style={{
-                      padding: '20px',
-                      background: '#fef3c7',
-                      borderRadius: '12px',
-                      textAlign: 'center' as const,
-                      color: '#92400e',
-                      border: '2px dashed #f59e0b'
-                    }}>
-                      <CalendarDays style={{ width: '24px', height: '24px', margin: '0 auto 8px' }} />
-                      Menunggu approval finance
-                    </div>
-                  )}
+                    {isReady ? (
+                      <button
+                        onClick={() =>
+                          handleDownloadPDF(row.id_payroll)
+                        }
+                        className="w-full bg-[#213448] text-white py-4 rounded-[20px] font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-[#213448]/10"
+                      >
+                        <Download size={18} /> Download PDF
+                      </button>
+                    ) : (
+                      <div className="w-full bg-amber-50 text-amber-600 py-4 rounded-[20px] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 border border-amber-100">
+                        <Calendar size={18} /> Menunggu Verifikasi
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
-
-        <style>{`
-          @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        `}</style>
       </div>
     </div>
   );

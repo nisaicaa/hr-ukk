@@ -102,7 +102,7 @@ const LeaveManagement = () => {
           <h2 className="text-3xl font-black text-slate-800 tracking-tight">Persetujuan Cuti</h2>
           <p className="text-slate-500 font-medium">Kelola seluruh pengajuan cuti dan izin karyawan.</p>
         </div>
-        <div className="h-16 w-16 bg-emerald-50 text-emerald-600 rounded-[28px] flex items-center justify-center">
+        <div className="h-16 w-16 bg-slate-100 text-slate-600 rounded-[28px] flex items-center justify-center">
           <ClipboardList size={30} />
         </div>
       </div>

@@ -5,7 +5,6 @@ import {
   getAdminReportData 
 } from "../service/repotService";
 
-// REPORT UNTUK HR, FINANCE, ADMIN
 export const report = async (req: Request, res: Response) => {
   try {
     const { month, year } = req.query;
@@ -15,8 +14,6 @@ export const report = async (req: Request, res: Response) => {
     }
 
     const role = (req as any).user?.role;
-
-    console.log("ROLE LOGIN:", role);
 
     let data;
 
@@ -38,7 +35,6 @@ export const report = async (req: Request, res: Response) => {
     }
 
     res.json(data);
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });

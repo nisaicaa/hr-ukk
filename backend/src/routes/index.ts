@@ -9,6 +9,7 @@ import payroll from "./payroll";
 import logs from "./logs";
 import repot from "./repot";
 import settings from "./workSetting"; // worksetting
+import dashboard from "./dashboard";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use("/payroll", payroll);
 router.use("/logs", logs);
 router.use("/repot", repot);
 router.use("/settings", settings); // 
+router.use("/dashboard", dashboard);
 
 export default router;

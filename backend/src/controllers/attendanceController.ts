@@ -13,9 +13,9 @@ import { AttendanceStatus } from '@prisma/client';
 // CONTROLLER UNTUK ABSENSI
 export const checkIn = async (req: any, res: Response) => {
   try {
-    const { latitude, longitude, address, photo } = req.body;
+    const { latitude, longitude, address } = req.body;
+    const photo = req.file ? req.file.filename : null; // ✅ ambil nama file
 
-    // fix: ambil user login
     const userId = req.user.id_user;
 
     const emp = await prisma.employee.findUnique({
@@ -27,7 +27,6 @@ export const checkIn = async (req: any, res: Response) => {
     }
 
     const idemployee = emp.id_employee;
-
     const now = new Date();
     const today = makeDateOnly(now);
 
@@ -36,8 +35,7 @@ export const checkIn = async (req: any, res: Response) => {
       return res.status(500).json({ success: false, message: "Setting kerja belum diatur" });
     }
 
-    // VALIDASI HARI KERJA
-    const todayDay = now.getDay(); // 0 minggu
+    const todayDay = now.getDay();
     const allowedDays = setting.work_days.split(',').map(Number);
 
     if (!allowedDays.includes(todayDay)) {
@@ -47,7 +45,6 @@ export const checkIn = async (req: any, res: Response) => {
       });
     }
 
-    // jam masuk
     const [h, m] = setting.work_start_time.split(':').map(Number);
     const start = new Date(today);
     start.setHours(h, m, 0, 0);
@@ -55,7 +52,6 @@ export const checkIn = async (req: any, res: Response) => {
     let status: AttendanceStatus = AttendanceStatus.PRESENT;
     let late_minutes = 0;
 
-    //  PAKAI TOLERANCE
     const tolerance = setting.late_tolerance || 0;
     const lateLimit = new Date(start.getTime() + tolerance * 60000);
 
@@ -72,17 +68,15 @@ export const checkIn = async (req: any, res: Response) => {
       checkin_longitude: longitude ? Number(longitude) : undefined,
       checkin_address: address,
       attendance_status: status,
-      checkin_photo: photo,
+      checkin_photo: photo, // ✅ simpan nama file
       late_minutes
     });
 
-    const message = status === AttendanceStatus.LATE
-      ? `Check-in berhasil. Kamu terlambat ${late_minutes} menit.`
-      : 'Check-in berhasil tepat waktu!';
-
     res.json({
       success: true,
-      message,
+      message: status === AttendanceStatus.LATE
+        ? `Check-in berhasil. Kamu terlambat ${late_minutes} menit.`
+        : 'Check-in berhasil tepat waktu!',
       data: attendance,
       is_late: status === AttendanceStatus.LATE,
       late_minutes
@@ -97,7 +91,8 @@ export const checkIn = async (req: any, res: Response) => {
 // CONTROLLER UNTUK CHECK-OUT
 export const checkOut = async (req: any, res: Response) => {
   try {
-    const { latitude, longitude, address, photo } = req.body;
+    const { latitude, longitude, address } = req.body;
+    const photo = req.file ? req.file.filename : null; // ✅ ambil nama file
 
     const userId = req.user.id_user;
 
@@ -110,7 +105,6 @@ export const checkOut = async (req: any, res: Response) => {
     }
 
     const idemployee = emp.id_employee;
-
     const now = new Date();
     const today = makeDateOnly(now);
 
@@ -120,7 +114,6 @@ export const checkOut = async (req: any, res: Response) => {
       return res.status(400).json({ success: false, message: 'Belum check-in hari ini' });
     }
 
-    // biar ga double checkout
     if (attendance.check_out) {
       return res.status(400).json({
         success: false,
@@ -138,7 +131,7 @@ export const checkOut = async (req: any, res: Response) => {
       checkout_longitude: longitude ? Number(longitude) : undefined,
       checkout_address: address,
       work_duration_minutes: duration,
-      checkout_photo: photo
+      checkout_photo: photo // simpan nama file
     });
 
     res.json({
