@@ -19,16 +19,36 @@ function normalizeHeader(header: string) {
     .trim();
 }
 
-function formatDate(value: any) {
-  if (!value) return "1990-01-01";
+function formatDate(value: any): Date {
+  const defaultDate = new Date("1990-01-01");
 
-  if (!isNaN(value)) {
-    const date = new Date((value - 25569) * 86400 * 1000);
-    return date.toISOString();
+  if (!value || value === "") return defaultDate;
+
+  // Jika sudah berupa Date
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value;
   }
 
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? "1990-01-01" : d.toISOString();
+  // Jika berupa angka (Excel serial date)
+  if (typeof value === "number") {
+    // Rentang aman tanggal Excel (1900–2100)
+    if (value > 25569 && value < 60000) {
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      const converted = new Date(excelEpoch.getTime() + value * 86400000);
+      return isNaN(converted.getTime()) ? defaultDate : converted;
+    }
+    return defaultDate;
+  }
+
+  // Jika berupa string
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  return defaultDate;
 }
 
 /* =========================
@@ -92,8 +112,8 @@ export async function createEmployeeWithUser(data: any) {
         full_name: data.full_name.trim(),
         departemen: data.departemen || "Umum",
         jabatan: data.jabatan || "Staff",
-        birth_date: new Date(formatDate(data.birth_date)),
-        hire_date: new Date(formatDate(data.hire_date)),
+        birth_date: formatDate(data.birth_date),
+        hire_date: formatDate(data.hire_date),
         employee_status: "AKTIF",
         basic_salary: Number(data.basic_salary) || 0,
         phone_number: data.phone_number || "",
@@ -143,9 +163,11 @@ export async function bulkProcessExcel(filePath: string) {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
 
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-        header: 1
-      });
+     const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+  header: 1,
+  raw: false,
+  defval: ""
+});
 
       const headers = (jsonData[0] as string[]).map(normalizeHeader);
 

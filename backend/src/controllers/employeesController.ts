@@ -302,7 +302,7 @@ export const bulkImport = async (req: Request, res: Response) => {
 
     return res.json({
       success: true,
-      ...result,
+      data: result, // Dibungkus dalam objek data
       password: "humanest26"
     });
 

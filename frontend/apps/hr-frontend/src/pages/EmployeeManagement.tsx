@@ -187,27 +187,29 @@ const EmployeeManagement = () => {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const formDataFile = new FormData();
-    formDataFile.append('excel', file);
-    
-    setIsSubmitting(true);
-    try {
-      const res = await apiClient.post('/employees/bulk', formDataFile, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setBulkResult(res.data);
-      setImportStep(2);
-      fetchEmployees();
-    } catch (e) { 
-      handleError(e); 
-    } finally { 
-      setIsSubmitting(false); 
-      if (fileInputRef.current) fileInputRef.current.value = ''; 
-    }
-  };
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const formDataFile = new FormData();
+  formDataFile.append('excel', file);
+
+  setIsSubmitting(true);
+  try {
+    const res = await apiClient.post('/employees/bulk', formDataFile, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+
+    setBulkResult(res.data.data);
+    setImportStep(2);
+    showSuccess("Import Berhasil", res.data.data.summary);
+    fetchEmployees();
+  } catch (e) {
+    handleError(e);
+  } finally {
+    setIsSubmitting(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+};
 
   const filteredEmployees = employees.filter(emp => 
     emp.user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
