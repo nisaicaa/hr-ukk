@@ -102,7 +102,7 @@ const PayrollManagement = () => {
     <div className="payroll-container" style={{ 
       padding: 'clamp(16px, 5vw, 32px)', 
       minHeight: '100vh', 
-      backgroundColor: '#f8fafc',
+      // Latar belakang f8fafc telah dihapus
     }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         

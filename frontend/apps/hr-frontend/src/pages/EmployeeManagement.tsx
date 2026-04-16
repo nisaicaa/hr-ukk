@@ -251,7 +251,7 @@ const EmployeeManagement = () => {
       {/* HEADER */}
       <div className="bg-white p-8 rounded-[35px] border border-[#94B4C1]/20 shadow-sm flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-black text-[#213448] tracking-tight">Manajemen Karyawan</h2>
+          <h2 className="text-3xl font-black text-[#213448] tracking-tight">Data Karyawan</h2>
           <p className="text-[#547792] font-medium">Total {employees.length} karyawan terdaftar</p>
         </div>
         <div className="flex items-center gap-3">
