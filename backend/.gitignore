@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# env files
+.env
+.env.*
+backend/.env
+
+# logs
+logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
+
+# build
+dist/
+build/
+
+# vite
+*.local
+
+# misc
+coverage/
